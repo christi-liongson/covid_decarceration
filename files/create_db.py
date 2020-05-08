@@ -32,7 +32,9 @@ def clean_column_names(columns):
 def create_table(conn, table_name, columns):
     """ create a table from the create_table_sql statement
     :param conn: Connection object
-    :param table_name: name of the table which also corresponds to csv e.g. INMT4AA1
+    :param table_name: name of the table which also corresponds to csv
+                       e.g. INMT4AA1
+    :param columns: list of column names from the csv
     :return: None. Creates table in database
     """
     try:
@@ -50,7 +52,7 @@ def create_table(conn, table_name, columns):
 #     database = r"../data/nc_doc.db"
 
 #     # Create inmates table
-#     sql_create_inmates_table = """ 
+#     sql_create_inmates_table = """
 #                                 DROP TABLE IF EXISTS inmates;
 #                                 CREATE TABLE IF NOT EXISTS inmates (
 #                                         id,
@@ -67,14 +69,10 @@ def create_table(conn, table_name, columns):
 
 #         # create inmates table
 #         create_table(conn, sql_create_inmates_table)
+
 #     else:
 #         print("Error! cannot create the database connection.")
-
 
 # if __name__ == '__main__':
 #     #create_connection(r"/Users/daminisharma/Dropbox/Harris MSCAPP/2019-20_Q3_Spring/Machine Learning/covid_decarceration/data/nc_doc.db")
 #     main()
-
-
-
-
