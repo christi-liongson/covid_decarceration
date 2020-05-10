@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd
 from sqlite3 import Error
 import re
 
@@ -15,21 +16,29 @@ def extract_data(table_data):
     return list(table_data.itertuples(index=False, name=None))
 
 
-def insert_records(conn, table_name, columns, records):
+def insert_records(conn, table, columns, records):
     '''
     Insert multiple records of data into table
     Inputs:
         - conn: Connection object
-        - table_name: name of the table / csv e.g. INMT4AA1
-        - columns: list of column names from the csv
-        - records: list of tuples to insert into table
+        - table (str): name of the table / csv e.g. INMT4AA1
+        - columns (str): column names from the csv
+        - records (list): tuples from extract_data to insert into table
 
     Returns: None (updates table in database)
     '''
     try:
         c = conn.cursor()
-        sql = ('INSERT INTO {}({}) VALUES({})').format(table_name, columns)
-        c.executemany(sql, list_records)
+        mulitplier = len(columns.split(","))
+        sql = 'INSERT INTO {} ({}) VALUES '.format(table, columns)
+        values = '%s' + (', %s' * multiplier)
+        sql += '({});'.format(values)
+        c.executemany(sql, records)
 
     except Error as e:
         print(e)
+
+
+# For testing
+sql_create_test_table = """DROP TABLE IF EXISTS test;
+                           CREATE TABLE IF NOT EXISTS test (name,age);"""
