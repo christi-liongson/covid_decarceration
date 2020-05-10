@@ -29,7 +29,7 @@ def insert_records(conn, table, columns, records):
     '''
     try:
         c = conn.cursor()
-        mulitplier = len(columns.split(","))
+        mulitplier = len(columns.split(", "))
         sql = 'INSERT INTO {} ({}) VALUES '.format(table, columns)
         values = '%s' + (', %s' * multiplier)
         sql += '({});'.format(values)
@@ -40,5 +40,9 @@ def insert_records(conn, table, columns, records):
 
 
 # For testing
+test_df = pd.DataFrame({'name': ['John', 'Karen'], 'age': [41, 32]})
+columns = test_df.columns
+columns = ', '.join(columns)
+
 sql_create_test_table = """DROP TABLE IF EXISTS test;
                            CREATE TABLE IF NOT EXISTS test (name,age);"""
