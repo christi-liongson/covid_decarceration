@@ -7,7 +7,7 @@ from populate_db import extract_data, insert_records
 
 import config
 
-TABLES = ["APPT7AA1", "AAPT9BJ1", "INMT4AA1", "INMT4BB1", "INMT4CA1",
+TABLES = ["APPT7AA1", "APPT9BJ1", "INMT4AA1", "INMT4BB1", "INMT4CA1",
           "INMT9CF1", "OFNT1BA1", "OFNT3AA1", "OFNT3BB1", "OFNT3CE1",
           "OFNT3DE1", "OFNT9BE1"]
 
@@ -24,16 +24,23 @@ def main():
 
     # Test loop
         for table_name in TABLES:
+            print("Working on table...", table_name)
 
             # Make sure all the CSV files are in the data folder!
-            table_data = pd.read_csv(config.data_folder + table_name + ".csv")
+            # Default dtype will be string - need to convert later
+            print("\tReading in table data as pandas DataFrame")
+            table_data = pd.read_csv(config.data_folder + table_name + ".csv",
+                                     dtype=str)
 
             columns = table_data.columns
             columns = ', '.join(columns)
             columns = clean_column_names(columns)
 
+            print("\tCreating table in database...")
             create_table(conn, table_name, columns)
             records = extract_data(table_data)
+            
+            print("\tInserting records into table...")
             insert_records(conn, table_name, columns, records)
 
     # Close connection
