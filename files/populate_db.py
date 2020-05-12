@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 from sqlite3 import Error
 import re
-import config 
+import config
 
 from create_db import create_connection, clean_column_names
 
@@ -43,6 +43,7 @@ def insert_records(conn, table, columns, records):
 
 # For testing
 def main():
+
     conn = create_connection(config.database_name)
     table_name = 'test'
     test_df = pd.DataFrame({'name': ['John', 'Karen'], 'age': [41, 32]})
@@ -56,7 +57,7 @@ def main():
     c.execute("DROP TABLE IF EXISTS test;")
     c.execute("CREATE TABLE IF NOT EXISTS test (name,age);")
 
-    records = extract_data(test_df) 
+    records = extract_data(test_df)
     insert_records(conn,table_name,columns,records)
 
     conn.commit()
