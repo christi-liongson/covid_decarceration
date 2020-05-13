@@ -13,7 +13,6 @@ def query_db(conn):
     try:
         c = conn.cursor()
         sql = 'SELECT * FROM OFNT3CE1 limit 1000;'
-
         df = pd.read_sql_query(sql,conn)
         #c.execute(sql)
 
