@@ -1,24 +1,20 @@
 import sqlite3
 from sqlite3 import Error
 import pandas as pd
-
-from create_db import create_connection, create_table, clean_column_names
-from populate_db import extract_data, insert_records
-
 import config
-
 import os.path
 from os import path
 
-def build_db(TABLES):
+from create_db import create_connection, create_table, clean_column_names
+from populate_db import extract_data, insert_records
+from query_db import query_db
+
+def build_db(conn,TABLES):
     '''
     Calls functions from create_db and populate_db to create ncdoc db, only if the file doesnt already exist
     '''
-    # Create connection to database
-    conn = create_connection(config.database_name)
-
     if conn:
-    # Test loop
+        # Loop through tables
         for table_name in TABLES:
             print("Working on table...", table_name)
 
@@ -41,13 +37,19 @@ def build_db(TABLES):
 
     # Close connection
     conn.commit()
-    conn.close()
-
 
 
 def main():
+
     if not path.exists(config.database_name):
-        build_db(config.TABLES)
+        # Create connection to database
+        conn = create_connection(config.database_name)
+        build_db(conn,config.TABLES)
+
+    conn = create_connection(config.database_name)
+    df = query_db(conn)
+    print(df)
+    conn.close()
 
 
 if __name__ == '__main__':
