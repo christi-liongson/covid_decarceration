@@ -7,21 +7,17 @@ from populate_db import extract_data, insert_records
 
 import config
 
-TABLES = ["APPT7AA1", "APPT9BJ1", "INMT4AA1", "INMT4BB1", "INMT4CA1",
-          "INMT9CF1", "OFNT1BA1", "OFNT3AA1", "OFNT3BB1", "OFNT3CE1",
-          "OFNT3DE1", "OFNT9BE1"]
+import os.path
+from os import path
 
-def main():
+def build_db(TABLES):
+    '''
+    Calls functions from create_db and populate_db to create ncdoc db, only if the file doesnt already exist
+    '''
     # Create connection to database
     conn = create_connection(config.database_name)
 
-    if conn is not None:
-
-    # Next, we should create a populate_db file, and call functions here
-    # to insert values into inmate table
-    # if that works fine, then we can write a function (in main?)
-    # which loops through all our tables and creates them like inmate table above
-
+    if conn:
     # Test loop
         for table_name in TABLES:
             print("Working on table...", table_name)
@@ -30,7 +26,7 @@ def main():
             # Default dtype will be string - need to convert later
             print("\tReading in table data as pandas DataFrame")
             table_data = pd.read_csv(config.data_folder + table_name + ".csv",
-                                     dtype=str)
+                                        dtype=str)
 
             columns = table_data.columns
             columns = ', '.join(columns)
@@ -47,13 +43,12 @@ def main():
     conn.commit()
     conn.close()
 
-    # NOTE: Ideally, we would create table columns and specify things like
-    # primary key, data type, etc. Without this, chances are all data
-    # will be read in like text. however, with hundreds of columns,
-    # that seems pretty difficult. I think eventually we'll
-    # want to create an object that groups our variables together anyway
-    # in this we can group "Numeric vars" and during preprocessing turn
-    # them to a numeric format for actual analysis?
+
+
+def main():
+    if not path.exists(config.database_name):
+        build_db(config.TABLES)
+
 
 if __name__ == '__main__':
     main()

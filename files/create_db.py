@@ -25,7 +25,8 @@ def clean_column_names(columns):
     '''some of the column names in the NC DOC files have
     characters that are causing errors e.g. "." and "()".
     This function cleans that before creating the table'''
-    columns = re.sub(r'[\.\/()&]','',columns)
+    columns = re.sub(r'[\.\/()&-]','',columns)
+    columns = re.sub(r'[#]','NO',columns)
     return columns
 
 
