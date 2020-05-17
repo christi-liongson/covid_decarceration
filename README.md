@@ -1,2 +1,3 @@
 # capp30254 Machine Learning Final Project
-# Covid decarceration
+# Covid Decarceration and Public Health
+# Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma 
