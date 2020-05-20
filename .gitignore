@@ -1,0 +1,3 @@
+# ignore the following file types
+*.pyc
+.Rproj.user
