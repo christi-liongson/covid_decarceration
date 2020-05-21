@@ -31,7 +31,7 @@ def import_clean_data(filepath):
         - df: (pandas df) a dataframe with datetime fields and snake_case column
                names
     '''
-    df = pd.read_csv('../data/may_19/ucla_0519_visitation_policy_by_state.csv')
+    df = pd.read_csv(filepath)
     df.columns = df.columns.str.lower()
     df.columns = df.columns.str.strip("?")
     df.columns = df.columns.str.replace(" ", "_")
