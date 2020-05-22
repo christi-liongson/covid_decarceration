@@ -1,8 +1,10 @@
 '''
 Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma
 
-Module to clean and wrangle the data from datasets on prison COVID-19 related
-social distancing measures into a series of dummy variables at the state level.
+Module to clean and wrangle the data from datasets on prison conditions: 
+functions to extract prison population numbers, prison capacity numbers, and 
+turn any COVID-19 related social distancing measures into a series of dummy 
+variables at the state level.
 '''
 
 import numpy as np
@@ -67,7 +69,7 @@ def select_columns(df, features=FINAL_DUMMIES):
     return small_df
 
 
-def transform_easy_cols(df, features, new_cols):
+def transform_dummy_cols(df, features, new_cols):
     '''
     Takes any columns designed as dummy columns with X values for yes and empty
     cells for no, and creates new dummy columns with 1 and 0
@@ -167,7 +169,7 @@ def clean_numeric_cols(df, cols):
     return df
 
 
-def get_capacity_pct(df, target_col, other_cols, new_col="capacity"): 
+def get_cap_pct(df, target_col, other_cols, new_col="capacity"): 
     '''
     Anywhere the operational capacity of a state is NaN, pulls data on prison
     capacity from the rated capacity of a state, and the existing population
