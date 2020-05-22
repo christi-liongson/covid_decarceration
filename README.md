@@ -7,3 +7,16 @@ According to data collected by the New York Times, many of the largest outbreaks
 ### The question(s):
 Can we predict the death rate/rate of infection in the prison population without decarceration? Can we predict recidivism rates, with respect to violent crime, if people are de-carcerated? And what qualitative analysis can we contribute to this urgent conversation? 
 
+#### Libraries: 
+- numpy
+- pandas
+- chardet
+
+#### Modules: 
+prison_conditions_wrangle.py: functions to clean and wrangle data from the UCLA
+    COVID in Prisons dataset and the Bureau of Justice Statistics
+    
+build_prison_conditions_df.py: functions to build dataframes on prison capacity,
+    prison population numbers, COVID-19 related social distancing policies in
+    prisons, and mitigation policies to address the adverse effects of isolation
+    on prisoners. 
