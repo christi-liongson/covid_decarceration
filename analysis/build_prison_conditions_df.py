@@ -8,10 +8,75 @@ import numpy as np
 import pandas as pd
 import chardet
 import prison_conditions_wrangle as pcw
+import clean_data
 
 CURRENT_POP = '../data/may_19/ucla_0519_COVID19_related_prison_releases.csv'
 POLICIES = '../data/may_19/ucla_0519_visitation_policy_by_state.csv'
 CAPACITY = '../data/prison_capacity_2018_state.csv'
+MARSHALL = '../data/marshall_covid_cases.csv'
+
+def merge_covid_cases():
+    '''
+    Imports Marshall Project data on covid-cases.
+    Merges prison conditions with state-level data on COVID-19 cases.
+    
+    Inputs:
+        - none: (the functions called use default arguments)
+
+    Returns:
+        - Pandas DataFrame of COVID-19 reported cases, prison policies, and
+          population information.
+    '''
+    demographics = ['state', 'pop_2020', 'pop_2018', 'capacity', 'pct_occup']
+    policies = ['no_visits', 'lawyer_access', 'phone_access', 'video_access',
+                'no_volunteers', 'limiting_movement', 'screening',
+                'healthcare_support']
+
+    marshall_dtypes = {'name': str,
+                    'total_staff_cases': 'Int64',
+                    'total_prisoner_cases': 'Int64',
+                    'total_staff_deaths': 'Int64',
+                    'total_prisoner_deaths': 'Int64',
+                    'as_of_date': str}
+
+    prison_conditions = build_prison_conditions_df()
+    prison_conditions.replace('federal bop', 'federal', inplace=True)
+
+    marshall = clean_data.import_csv(MARSHALL, marshall_dtypes)
+
+    marshall['as_of_date'] = pd.to_datetime(marshall['as_of_date'],
+                                            format='%Y-%m-%d')
+    marshall['lower_name'] = marshall['name'].str.lower()
+
+    marshall.sort_values(by='as_of_date', inplace=True)
+    blank_policies = {k: 0 for k in policies}
+
+    df = marshall.merge(prison_conditions[demographics], left_on='lower_name',
+                        right_on='state')
+    df = df.assign(**blank_policies)
+
+    for state in list(marshall['lower_name'].unique()):
+        state_filter = df['lower_name'] == state
+        date_filter = df['as_of_date'] > \
+                      (prison_conditions[prison_conditions['state'] == state] \
+                      ['effective_date'].values[0])
+        for col in marshall.select_dtypes(include='number').columns.to_list():
+            df.loc[state_filter, col] = marshall.loc[state_filter, col] \
+                                        .fillna(method='bfill')
+            df.loc[state_filter, col] = marshall.loc[state_filter, col] \
+                                        .fillna(method='ffill')
+
+        policies_state = prison_conditions.loc[prison_conditions['state'] == \
+                         state, policies].reset_index(drop=True).iloc[0] \
+                         .to_dict()
+
+        df.loc[state_filter & date_filter] = df.loc[state_filter & date_filter] \
+                                             .replace(to_replace=blank_policies,
+                                                      value=policies_state)
+
+    df.drop(columns=['lower_name', 'state'], inplace=True)
+
+    return df
 
 
 def build_prison_conditions_df():

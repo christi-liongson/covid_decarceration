@@ -15,7 +15,6 @@ def import_csv(filename, dtypes=None):
         dtypes (dict): Datatypes of Pandas dataframe to import
     Outputs: Pandas DataFrame
     '''
-    print(list(dtypes.keys()))
 
     return pd.read_csv(filename, dtype=dtypes, usecols=list(dtypes.keys()))
 
