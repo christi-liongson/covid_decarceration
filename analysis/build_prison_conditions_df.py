@@ -61,9 +61,9 @@ def merge_covid_cases():
                       (prison_conditions[prison_conditions['state'] == state] \
                       ['effective_date'].values[0])
         for col in marshall.select_dtypes(include='number').columns.to_list():
-            df.loc[state_filter, col] = marshall.loc[state_filter, col] \
+            df.loc[state_filter, col] = df.loc[state_filter, col] \
                                         .fillna(method='bfill')
-            df.loc[state_filter, col] = marshall.loc[state_filter, col] \
+            df.loc[state_filter, col] = df.loc[state_filter, col] \
                                         .fillna(method='ffill')
 
         policies_state = prison_conditions.loc[prison_conditions['state'] == \
