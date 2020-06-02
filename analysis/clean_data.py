@@ -47,27 +47,22 @@ def normalize(df, scaler=None):
 
     return normalized_df, scaler
 
-def one_hot_encoding_df(train_df, test_df, cat_columns):
+
+def one_hot_encode(df, features, separator="_"):
     '''
-    Encodes categorical variables in dataframe.
-    Inputs:
-        train_df (dataframe): Training features
-        test_df (dataframe): Testing features
-        cat_columns (list): List of categorical variables
-    Outputs: DataFrame
+    One-hot encodes categorical variables in a data set
+
+    Inputs: 
+        - df: (pandas df) a pandas dataframe
+        - features: (lst) the categorical features to encode as dummies
+        - separator: (str) the string to connect the feature name as a prefix
+                      on the feature value, defaults to "_"
+
+    Returns: 
+        - df: (pandas df) a modified dataframe with dummy variables included
     '''
+    df = pd.get_dummies(df, columns=features, prefix_sep=separator)
+    df.columns = df.columns.str.lower()
+    df.columns = df.columns.str.replace(" ", "_")
 
-    train_processed, train_cols = encode_vars(train_df, cat_columns)
-    test_processed, test_cols = encode_vars(test_df, cat_columns)
-
-    cols_notin_test = list(train_cols - test_cols)
-    cols_notin_train = list(test_cols - train_cols)
-
-    if len(cols_notin_test) > 0:
-        for col in cols_notin_test:
-            test_processed[col] = 0
-
-    if len(cols_notin_train) > 0:
-        train_processed.drop(cols_notin_train)
-
-    return train_processed, test_processed
+    return df

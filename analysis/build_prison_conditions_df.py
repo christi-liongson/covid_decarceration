@@ -15,6 +15,46 @@ POLICIES = '../data/may_19/ucla_0519_visitation_policy_by_state.csv'
 CAPACITY = '../data/prison_capacity_2018_state.csv'
 MARSHALL = '../data/marshall_covid_cases.csv'
 
+
+def prep_df_for_analysis():
+    '''
+    Takes the final dataframe of COVID-19 cases, prison capacity/population, and
+    social distancing policies, and tranforms for analysis: creates dummy
+    variables for each state and calculates new cases over time. Finally, order
+    the data by time to prepare for temporal splitting. 
+
+    Inputs: 
+        - none: (the functions called use default arguments)
+
+    Returns: 
+        - df: (pandas df) pandas dataframe with COVID-19 cases, prison
+               capacity/population, and social distancing policies, transformed
+               for analysis
+    '''
+    df = merge_covid_cases()
+    
+    df = df.drop(columns=[col for col in df.columns if 'test' in col])
+    df.sort_values(by=['state', 'as_of_date'], inplace=True)
+
+    deltas = {"new_staff_cases": "total_staff_cases", 
+              "new_prisoner_cases": "total_prisoner_cases",
+              "new_staff_deaths": "total_staff_deaths",
+              "new_prisoner_deaths": "total_prisoner_deaths"}
+
+    for new_col, cum_tot in deltas.items():
+        df[new_col] = 0
+        df[new_col] = df[new_col].astype('Int64')
+        for state in df['state'].unique():
+            state_filter = df['state'] == state
+            df.loc[state_filter, new_col] = df.loc[state_filter, cum_tot].diff()
+
+    df = clean_data.one_hot_encode(df, ["state"])
+    df.sort_values(by='as_of_date', inplace=True)
+    df.index = range(len(df))
+    
+    return df
+
+
 def merge_covid_cases():
     '''
     Imports Marshall Project data on covid-cases.
@@ -24,8 +64,8 @@ def merge_covid_cases():
         - none: (the functions called use default arguments)
 
     Returns:
-        - Pandas DataFrame of COVID-19 reported cases, prison policies, and
-          population information.
+        - df: (pandas df) pandas dataFrame of COVID-19 reported cases, prison 
+               policies, and population information.
     '''
     demographics = ['state', 'pop_2020', 'pop_2018', 'capacity', 'pct_occup']
     policies = ['no_visits', 'lawyer_access', 'phone_access', 'video_access',
@@ -40,7 +80,6 @@ def merge_covid_cases():
                     'as_of_date': str}
 
     prison_conditions = build_prison_conditions_df()
-    prison_conditions.replace('federal bop', 'federal', inplace=True)
 
     marshall = clean_data.import_csv(MARSHALL, marshall_dtypes)
 
@@ -55,8 +94,8 @@ def merge_covid_cases():
                         right_on='state')
     df = df.assign(**blank_policies)
 
-    for state in list(marshall['lower_name'].unique()):
-        state_filter = df['lower_name'] == state
+    for state in df['state'].unique():
+        state_filter = df['state'] == state
         date_filter = df['as_of_date'] > \
                       (prison_conditions[prison_conditions['state'] == state] \
                       ['effective_date'].values[0])
@@ -74,7 +113,7 @@ def merge_covid_cases():
                                              .replace(to_replace=blank_policies,
                                                       value=policies_state)
 
-    df.drop(columns=['lower_name', 'state'], inplace=True)
+    df.drop(columns=['lower_name', 'name'], inplace=True)
 
     return df
 
@@ -106,7 +145,7 @@ def build_prison_conditions_df():
 
     prison_status_df["pop_2020"].fillna(prison_status_df["pop_2018"],
                                         inplace=True)
-    # prison_status_df = prison_status_df.dropna()
+    prison_status_df = prison_status_df.dropna()
 
     return prison_status_df
 
