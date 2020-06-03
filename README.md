@@ -1,5 +1,6 @@
 # COVID-19: Decarceration and Public Health
 CAPP 30254 Machine Learning Final Project
+
 Team Members: Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma 
 
 ## Overview
