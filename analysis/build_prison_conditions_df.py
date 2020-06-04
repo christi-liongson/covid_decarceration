@@ -36,20 +36,32 @@ def prep_df_for_analysis():
     df = df.drop(columns=[col for col in df.columns if 'test' in col])
     df.sort_values(by=['state', 'as_of_date'], inplace=True)
 
-    deltas = {"new_staff_cases": "total_staff_cases", 
-              "new_prisoner_cases": "total_prisoner_cases",
-              "new_staff_deaths": "total_staff_deaths",
-              "new_prisoner_deaths": "total_prisoner_deaths"}
+    new_cols = {"new_staff_cases": "total_staff_cases", 
+                "new_prisoner_cases": "total_prisoner_cases",
+                "new_staff_deaths": "total_staff_deaths",
+                "new_prisoner_deaths": "total_prisoner_deaths",
+                "lag_staff_cases": "total_staff_cases",
+                "lag_prisoner_cases": "total_prisoner_cases",
+                "lag_staff_deaths": "total_staff_deaths",
+                "lag_prisoner_deaths": "total_prisoner_deaths"}
 
-    for new_col, cum_tot in deltas.items():
+    for new_col, cum_tot in new_cols.items():
         df[new_col] = 0
         df[new_col] = df[new_col].astype('Int64')
         for state in df['state'].unique():
             state_filter = df['state'] == state
-            df.loc[state_filter, new_col] = df.loc[state_filter, cum_tot].diff()
+            if "new" in new_col: 
+                df.loc[state_filter, new_col] = df.loc[state_filter, 
+                                                       cum_tot].diff()
+            else:
+                df.loc[state_filter, new_col] = df.loc[state_filter, 
+                                                       cum_tot].shift()
 
     df = clean_data.one_hot_encode(df, ["state"])
     df.sort_values(by='as_of_date', inplace=True)
+    #drop any last NA values in the "date" column
+    df = df.dropna(subset=["as_of_date"])
+    #get the index to start at 0, again
     df.index = range(len(df))
     
     return df

@@ -10,10 +10,9 @@ import build_prison_conditions_df as bpc
 import clean_data
 
 
-def timesplit_train_test(): 
+def timesplit_data(): 
     '''
-    Splits the dataset into training and testing sets at an 80/20 ratio of 
-    train data to test data. 
+    Splits the dataset into training and testing sets at the most recent week.  
 
     Inputs: 
         - none: (the functions called use default arguments) 
@@ -24,22 +23,40 @@ def timesplit_train_test():
         - test: (pandas df) pandas dataframe of the testing data, consisting of
                  the latest 20% of the observations
     '''
-    prison_df = bpc.prep_df_for_analysis()
+    dataset = bpc.prep_df_for_analysis()
 
-    split_loc = round(len(prison_df) * .8)
-    train, test = df.iloc[:split_loc, :].copy(), df.iloc[split_loc:len(df), :].copy()
+    latest_week = dataset["as_of_date"].iloc[-1].week
+
+    train = dataset.loc[dataset["as_of_date"].dt.week < latest_week].copy()
+    test = dataset.loc[dataset["as_of_date"].dt.week == latest_week].copy()
 
     return train, test
 
 
-def time_cv_split(train, TBD):
+def time_cv_split(train):
     '''
-    Splits the training dataset into 5 segments for temporal cross-validation
+    Splits the training dataset into weekly segments for temporal 
+    cross-validation.
 
     Inputs: 
         - train: (pandas df) the pandas dataframe of the training data
+
+    Returns: 
+        - train_cv_splits: (lst) a list of tuples of the form 
+                            (split_number, week, data from that week)
     '''
-    return None
+    train_cv_splits = []
+
+    earliest_train_week = train["as_of_date"].iloc[0].week
+    latest_train_week = train["as_of_date"].iloc[-1].week
+
+    split_number = 0
+    for week in range(earliest_train_week, latest_train_week + 1):
+        split = train.loc[train['as_of_date'].dt.week == week].copy()        
+        train_cv_splits.append((split_number, week, split))
+        split_number += 1
+
+    return train_cv_splits
 
 
 # Build Classifiers: Run a grid search, run a single model
