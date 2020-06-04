@@ -191,6 +191,22 @@ def impute_missing(df, features):
 
     return df
 
+def impute_most_common(df, vars_to_impute):
+    '''
+    Impute missing values of continuous variables to the mode values
+    Inputs:
+    - df: a pandas DataFrame
+    - vars_to_impute (list): continuous variables to impute
+
+    Returns: updated DataFrame with no missing values
+    '''
+    for col in vars_to_impute:
+        df[col] = df[col].fillna(df[col].mode())
+        #df[col].fillna(df[col].mode()[0],inplace=True)
+        #df[col] = df[col].fillna(df[col].median())
+
+    return df
+
 
 def normalize_features(to_norm, train, features):
     '''
@@ -240,6 +256,13 @@ def discretize_vars(df, var, bins, labels):
     new_label = var + "_binned"
     df[new_label] = pd.cut(df[var], bins=bins, labels=labels)
 
+
+def current_crime_violent(df,violent_code):
+
+    df.loc[df['Current_Offense_Risk_Level'].isin(violent_code),'current_crime_violent'] = 1
+    df['current_crime_violent'].fillna(0,inplace=True)
+
+    return df
 
 # Build Classifiers
 def classify(train, test, features, target, MODELS, GRID):
