@@ -9,6 +9,7 @@ import pandas as pd
 import chardet
 import prison_conditions_wrangle as pcw
 import clean_data
+import logging
 
 CURRENT_POP = '../data/may_19/ucla_0519_COVID19_related_prison_releases.csv'
 POLICIES = '../data/may_19/ucla_0519_visitation_policy_by_state.csv'
@@ -251,3 +252,9 @@ def build_capacity_df(filepath=CAPACITY):
     capacity_df = pcw.select_columns(capacity, ["state", "custody_population",
                                                 "capacity", "pct_occup"])
     return capacity_df
+
+if __name__ ==  "__main__":
+    logging.info('''Generating final dataframe of COVID-19 cases prison
+                    capacity/population, and social distancing policies
+                    for analysis.''')
+    print(prep_df_for_analysis())
