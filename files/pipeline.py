@@ -240,6 +240,30 @@ def one_hot_encode(df, features):
     '''
     return pd.get_dummies(df, columns=features)
 
+def one_hot_adjust_test(train,test):
+    '''
+    Adjusting training and testing data after one-hot encoding - if columns
+    appear in training but not testing, columns with all 0s are added to the testing data.
+    If columns appear in testing but not training, they are dropped from testing.
+    '''
+    set_test = set(test.columns)
+    set_train = set(train.columns)
+
+    # We want to drop these from test
+    in_test_not_train = set_test - set_train    
+
+    # We want to add these as 0s to test
+    in_train_not_test = set_train - set_test
+
+    if list(in_train_not_test):
+        for col in list(in_train_not_test):
+            test[col] = 0
+
+    if list(in_test_not_train):
+        for col in list(in_test_not_train):
+            test.drop(col,axis=1,inplace=True)
+
+    return(train,test)   
 
 def discretize_vars(df, var, bins, labels):
     '''
