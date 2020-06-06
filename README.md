@@ -10,7 +10,7 @@ Can we predict the death rate/rate of infection in the prison population without
   - data:
   - files:
 
-North Carolina's Department of Public Safety releases ["all public information on all NC Department of Public Safety offenders convicted since 1972."](http://webapps6.doc.state.nc.us/opi/downloads.do?method=view) Before running the following modules or notebooks, download all tables and store them as CSVs. (Note: this will
+North Carolina's Department of Public Safety (NCDPS) releases ["all public information on all NC Department of Public Safety offenders convicted since 1972."](http://webapps6.doc.state.nc.us/opi/downloads.do?method=view) Before running the following modules or notebooks, download all tables and store them as CSVs. (Note: this will
 require around 5 GB of storage). Run ```./ncdoc_parallel.sh``` to store the data in the ```preprocessed/``` directory. For more information, see [https://github.com/jtwalsh0/ncdoc_data](ncdoc_data) project by jtwalsh0.
 
 #### Files (Public Safety)
@@ -26,6 +26,9 @@ require around 5 GB of storage). Run ```./ncdoc_parallel.sh``` to store the data
                                   functions from the following module
     - pipeline.py: contains functions to perform imputation, one-hot encoding, etc.
 #### Data (Public Safety)
+  - coding_offenses.xls: categorizes offense labels from the NCDPS based on extent of
+                         harm on a scale from 1 to 5, where 1 is the least likely and
+                         5 is most likely 
   - data_1yr.csv: pre-processed output from ```build()``` in build_dataset, where
                   recidivism is defined as reincarceration within one year of
                   release
