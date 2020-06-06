@@ -453,9 +453,9 @@ def get_coded_offenses(dataset_flag):
     dataset_with_offenses.loc[dataset_with_offenses['NextPrefix']=="0",'NextPrefix'] = "NONE"
 
     # Clean up names
-    #dataset_with_offenses.rename(columns={"('Count', 'FELON')":'felon_count',"('Count', 'MISD.')":'misd_count'}, inplace=True)
+    dataset_with_offenses.rename(columns={('Count', 'FELON'):'felon_count',('Count', 'MISD.'):'misd_count'}, inplace=True)
 
-    dataset_with_offenses.to_csv('../data/dataset_main_active.csv', index=False)
+    #dataset_with_offenses.rename(columns={"('Count', 'FELON')":'felon_count',"('Count', 'MISD.')":'misd_count'}, inplace=True)
 
     return dataset_with_offenses
 
@@ -473,6 +473,8 @@ def build_all(db_name,num_years):
 
     stop = datetime.datetime.now()
     print("Time Elapsed:", stop - start) 
+    
+    dataset_final.to_csv('../data/dataset_main_active'+str(num_years)+'.csv', index=False)
 
     return dataset_final
 
@@ -491,10 +493,10 @@ def get_age(df):
     # dataset_main_active.loc[dataset_main_active['age_at_sentence'] < 0, ['EARLIEST_SENTENCE_EFFECTIVE_DT', 'BIRTH_DATE']]
 
     # Convert to NaN if less than 10
-    dataset_main_active.loc[dataset_main_active['age_at_sentence'] < 10, ['age_at_sentence']] = np.NaN
+    df.loc[df['age_at_sentence'] < 10, ['age_at_sentence']] = np.NaN
 
     # Check number of missing
-    print(dataset_main_active['age_at_sentence'].isnull().sum())
+    print(df['age_at_sentence'].isnull().sum())
 
     return df
 
@@ -650,8 +652,15 @@ def construct_vars_post_impute(df):
     first_incarceration = pd.DataFrame(df.groupby(['ID'])['EARLIEST_SENTENCE_EFFECTIVE_DT'].min().reset_index(name='first_incarceration_date'))
     df = df.merge(first_incarceration, on='ID')
 
+    age_first_offense = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT']==df['first_incarceration_date']]
+    age_first_offense.drop_duplicates(inplace=True)
+    age_first_offense = age_first_offense.loc[:,['ID','age_at_sentence']]
+    age_first_offense.rename(columns={'age_at_sentence':'age_first_offense'},inplace=True)
+
+    df = df.merge(age_first_offense, on="ID", how='left')
     # Flag for juvenile offense
-    df['age_first_offense'] = (df['first_incarceration_date'] - df['BIRTH_DATE']).astype('<m8[Y]')
+    #df['age_first_offense'] = (df['first_incarceration_date'] - df['BIRTH_DATE']).astype('<m8[Y]')
+
     df['age_first_offense'].describe()
 
     df['juv_first_offense'] = (df['age_first_offense'] < 18)
@@ -675,32 +684,65 @@ def process_features(train_data,df,categorical_vars_one_hot,continuous_vars_norm
 # 
 def split_and_process(df,config):
     df = construct_features_before_split(df)
+    keep_vars = config.keep_vars
+    holdOut = config.holdOut
+    randomState = config.randomState
+    ID_vars = config.ID_vars
 
-    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,config.keep_vars,config.holdOut,config.randomState)
+    cat_impute_vars = config.categorical_vars_to_impute
+    cont_impute_vars = config.continuous_vars_to_impute
+
+    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,keep_vars,holdOut,randomState)
+
+    one_hot = config.categorical_vars_one_hot
+    normalize = config.continuous_vars_normalize
 
     # impute and construct vars post impute
-    train_data = imputation(train_data,config.categorical_vars_to_impute,config.continuous_vars_to_impute)
+    train_data = imputation(train_data,cat_impute_vars,cont_impute_vars)
     train_data = construct_vars_post_impute(train_data)
 
-    test_data = imputation(test_data,config.categorical_vars_to_impute,config.continuous_vars_to_impute)
+    test_data = imputation(test_data,cat_impute_vars,cont_impute_vars)
     test_data = construct_vars_post_impute(test_data)
     
-    validate_data = imputation(validate_data,config.categorical_vars_to_impute,config.continuous_vars_to_impute)
+    validate_data = imputation(validate_data,cat_impute_vars,cont_impute_vars)
     validate_data = construct_vars_post_impute(validate_data)
 
-    active_sentences = imputation(active_sentences,config.categorical_vars_to_impute,config.continuous_vars_to_impute)
+    active_sentences = imputation(active_sentences,cat_impute_vars,cont_impute_vars)
     active_sentences = construct_vars_post_impute(active_sentences)
+
+    print(train_data.columns)
 
     # pre process all
     train_backup = train_data.copy()
-    train_data = process_features(train_backup,train_data,categorical_vars_one_hot,continuous_vars_normalize)
-    test_data = process_features(train_backup,test_data,categorical_vars_one_hot,continuous_vars_normalize)
-    validate_data = process_features(train_backup,validate_data,categorical_vars_one_hot,continuous_vars_normalize)
-    active_sentences = process_features(train_backup,active_sentences,categorical_vars_one_hot,continuous_vars_normalize)
-
+    train_data = process_features(train_backup,train_data,one_hot,normalize)
+    test_data = process_features(train_backup,test_data,one_hot,normalize)
+    validate_data = process_features(train_backup,validate_data,one_hot,normalize)
+    active_sentences = process_features(train_backup,active_sentences,one_hot,normalize)
+    
     # adjust one hot
-    train_data, test_data = one_hot_adjust_test(train_data,test_data)
-    train_data, validate_data = one_hot_adjust_test(train_data,validate_data)
-    train_data, active_sentences = one_hot_adjust_test(train_data,active_sentences)
+    train_data, test_data = pl.one_hot_adjust_test(train_data,test_data)
+    train_data, validate_data = pl.one_hot_adjust_test(train_data,validate_data)
+    train_data, active_sentences = pl.one_hot_adjust_test(train_data,active_sentences)
+
+    train_data.drop(ID_vars,inplace=True,axis=1)
+    test_data.drop(ID_vars,inplace=True,axis=1)
+    validate_data.drop(ID_vars,inplace=True,axis=1)
+    active_sentences.drop(ID_vars,inplace=True,axis=1)
+
 
     return train_data, test_data, validate_data, active_sentences
+
+def sanity_check(train_df, test_df): 
+    
+    # Sort features alphabetically
+    train_df = train_df.reindex(sorted(train_df.columns), axis=1)
+    test_df = test_df.reindex(sorted(test_df.columns), axis=1)
+
+    # Check that they have the same features
+    if (train_df.columns == test_df.columns).all():
+        print("Success: Features match")
+
+    # Check that no NAs remain
+    if  not train_df.isna().sum().astype(bool).any() and \
+        not test_df.isna().sum().astype(bool).any():
+        print("Success: No NAs remain")
