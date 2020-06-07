@@ -576,7 +576,37 @@ def construct_features_before_split(df):
 
     return df 
 
-def train_test_validate_active_split(df,keep_vars,holdOut,randomState):
+def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,target):
+
+    # fix target
+    target_label = config.target_vars
+
+
+    if target == "binary":
+        df[df[target_label]==0, 'label'] = 0
+        df[df[target_label]!=0, 'label'] = 1
+
+        df.drop(target_label,inplace=True,axis=1) 
+        
+        df[target_label] = df['label']
+        df.drop('label',inplace=True,axis=1) 
+
+        # DO SOMETHING TO TARGET LABEL TO MAKE THIS BINARY
+        # THEN DROP TARGET_LABEL
+    if target == "three_class":
+        df[df[target_label]==0, 'label'] = 0
+        df[df[target_label]==1, 'label'] = 0
+        df[df[target_label]==2, 'label'] = 0
+        df[df[target_label]==3, 'label'] = 1
+        df[df[target_label]==4, 'label'] = 2
+        df[df[target_label]==5, 'label'] = 3
+
+        df.drop(target_label,inplace=True,axis=1) 
+
+        df[target_label] = df['label']
+        df.drop('label',inplace=True,axis=1) 
+        # DO SOMETHING TO TARGET LABEL TO MAKE THIS 3-class
+        # THEN DROP TARGET_LABEL
 
     df = df.loc[:,keep_vars]
 
@@ -694,7 +724,7 @@ def split_and_process(df,config,target):
     cat_impute_vars = config.categorical_vars_to_impute
     cont_impute_vars = config.continuous_vars_to_impute
 
-    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,keep_vars,holdOut,randomState)
+    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,target)
 
     one_hot = config.categorical_vars_one_hot
     normalize = config.continuous_vars_normalize
@@ -731,18 +761,6 @@ def split_and_process(df,config,target):
     validate_data.drop(ID_vars,inplace=True,axis=1)
     active_sentences.drop(ID_vars,inplace=True,axis=1)
 
-    # fix target
-    target_label = config.target_vars
-
-    if target == "binary":
-        # DO SOMETHING TO TARGET LABEL TO MAKE THIS BINARY
-        # THEN DROP TARGET_LABEL
-    if target == "three_class":
-        # DO SOMETHING TO TARGET LABEL TO MAKE THIS 3-class
-        # THEN DROP TARGET_LABEL
-    
-
-        
 
 
     return train_data, test_data, validate_data, active_sentences

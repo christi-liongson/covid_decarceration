@@ -241,6 +241,7 @@ def one_hot_encode(df, features):
     return pd.get_dummies(df, columns=features)
 
 def one_hot_adjust_test(train,test):
+    
     '''
     Adjusting training and testing data after one-hot encoding - if columns
     appear in training but not testing, columns with all 0s are added to the testing data.
