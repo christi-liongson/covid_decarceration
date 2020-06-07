@@ -578,36 +578,6 @@ def construct_features_before_split(df):
 
 def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,target):
 
-    # fix target
-    target_label = config.target_vars
-
-
-    if target == "binary":
-        df[df[target_label]==0, 'label'] = 0
-        df[df[target_label]!=0, 'label'] = 1
-
-        df.drop(target_label,inplace=True,axis=1) 
-        
-        df[target_label] = df['label']
-        df.drop('label',inplace=True,axis=1) 
-
-        # DO SOMETHING TO TARGET LABEL TO MAKE THIS BINARY
-        # THEN DROP TARGET_LABEL
-    if target == "three_class":
-        df[df[target_label]==0, 'label'] = 0
-        df[df[target_label]==1, 'label'] = 0
-        df[df[target_label]==2, 'label'] = 0
-        df[df[target_label]==3, 'label'] = 1
-        df[df[target_label]==4, 'label'] = 2
-        df[df[target_label]==5, 'label'] = 3
-
-        df.drop(target_label,inplace=True,axis=1) 
-
-        df[target_label] = df['label']
-        df.drop('label',inplace=True,axis=1) 
-        # DO SOMETHING TO TARGET LABEL TO MAKE THIS 3-class
-        # THEN DROP TARGET_LABEL
-
     df = df.loc[:,keep_vars]
 
     # hold out active sentences
@@ -615,8 +585,38 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
     print("Size of active sentences dataset: ",active_sentences.shape[0])    
 
     # Drop those missing decided category
-    dataset_no_active = df[(df['Recidivate_Risk_Level'].notnull())]
+    dataset_no_active = df.loc[df['Recidivate_Risk_Level'].notnull(),:]
     print("Dataset size: " , dataset_no_active.shape[0])
+
+    # FIX TARGET VAR HERE
+    # fix target
+    target_label = config.target_vars[0]
+
+    if target == "binary":
+        dataset_no_active.loc[dataset_no_active[target_label]==0, 'label'] = 0
+        dataset_no_active.loc[dataset_no_active[target_label]!=0, 'label'] = 1
+
+        dataset_no_active.drop(target_label,inplace=True,axis=1) 
+        
+        dataset_no_active[target_label] = dataset_no_active['label']
+        dataset_no_active.drop('label',inplace=True,axis=1) 
+
+        # DO SOMETHING TO TARGET LABEL TO MAKE THIS BINARY
+        # THEN DROP TARGET_LABEL
+    if target == "three_class":
+        dataset_no_active.loc[dataset_no_active[target_label]==0, 'label'] = 0
+        dataset_no_active.loc[dataset_no_active[target_label]==1, 'label'] = 0
+        dataset_no_active.loc[dataset_no_active[target_label]==2, 'label'] = 0
+        dataset_no_active.loc[dataset_no_active[target_label]==3, 'label'] = 1
+        dataset_no_active.loc[dataset_no_active[target_label]==4, 'label'] = 2
+        dataset_no_active.loc[dataset_no_active[target_label]==5, 'label'] = 2
+
+        dataset_no_active.drop(target_label,inplace=True,axis=1) 
+
+        dataset_no_active[target_label] = dataset_no_active['label']
+        dataset_no_active.drop('label',inplace=True,axis=1) 
+        # DO SOMETHING TO TARGET LABEL TO MAKE THIS 3-class
+        # THEN DROP TARGET_LABEL
 
     # Train, val, test split:
     # get number of unique ids and the uniqe IDs
