@@ -5,6 +5,7 @@ from sqlite3 import Error
 import config
 from create_db import create_connection, create_table, clean_column_names
 
+
 # def query_db(conn):
 #     '''
 #     Function to query database and save results as pandas dataframe for further analysis and cleaning

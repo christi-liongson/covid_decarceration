@@ -7,6 +7,7 @@ import config
 from create_db import create_connection, clean_column_names
 
 def extract_data(table_data):
+    
     '''
     Extracts tuples from data
     Inputs:
