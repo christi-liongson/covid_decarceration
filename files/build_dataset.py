@@ -665,6 +665,8 @@ def construct_vars_post_impute(df):
 
     df['juv_first_offense'] = (df['age_first_offense'] < 18)
     
+    df.drop('first_incarceration_date',axis=1,inplace=True)
+
     # construct current crime violent flag
     df = pl.current_crime_violent(df,[4,5])
 
@@ -682,7 +684,7 @@ def process_features(train_data,df,categorical_vars_one_hot,continuous_vars_norm
 #def adjust_one_hot():
 
 # 
-def split_and_process(df,config):
+def split_and_process(df,config,target):
     df = construct_features_before_split(df)
     keep_vars = config.keep_vars
     holdOut = config.holdOut
@@ -728,6 +730,19 @@ def split_and_process(df,config):
     test_data.drop(ID_vars,inplace=True,axis=1)
     validate_data.drop(ID_vars,inplace=True,axis=1)
     active_sentences.drop(ID_vars,inplace=True,axis=1)
+
+    # fix target
+    target_label = config.target_vars
+
+    if target == "binary":
+        # DO SOMETHING TO TARGET LABEL TO MAKE THIS BINARY
+        # THEN DROP TARGET_LABEL
+    if target == "three_class":
+        # DO SOMETHING TO TARGET LABEL TO MAKE THIS 3-class
+        # THEN DROP TARGET_LABEL
+    
+
+        
 
 
     return train_data, test_data, validate_data, active_sentences
