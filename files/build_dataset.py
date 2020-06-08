@@ -592,9 +592,7 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
 
     # hold out active sentences
     active_sentences = df[(df['INMATE_ADMIN_STATUS_CODE']=='ACTIVE') & (df['NextPrefix']=="NONE") ]
-    active_almost_complete = active_sentences[active_sentences['almost_complete'] == 1]
     print("Size of active sentences dataset: ",active_sentences.shape[0])
-    print("Size of almost active sentences dataset: ",active_almost_complete.shape[0])
 
     # Drop those missing decided category
     dataset_no_active = df.loc[df['Recidivate_Risk_Level'].notnull(),:]
@@ -671,7 +669,7 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
     print("Does Train Represent 80% of the Train+Validate Data?:", len(train_data.ID.unique())/(len(train_data.ID.unique())+len(validate_data.ID.unique())))
 
 
-    return active_sentences, active_almost_complete, train_data, validate_data, test_data
+    return active_sentences, train_data, validate_data, test_data
 
 def imputation(df,categorical_vars_to_impute,continuous_vars_to_impute):
     # impute categorical vars
@@ -773,7 +771,9 @@ def split_and_process(df,config,target):
     validate_data.drop(ID_vars,inplace=True,axis=1)
     active_sentences.drop(ID_vars,inplace=True,axis=1)
 
-    return train_data, test_data, validate_data, active_sentences
+    active_almost_complete = active_sentences[active_sentences['almost_complete'] == 1]
+
+    return train_data, test_data, validate_data, active_sentences, active_almost_complete
 
 def sanity_check(train_df, test_df):
 
