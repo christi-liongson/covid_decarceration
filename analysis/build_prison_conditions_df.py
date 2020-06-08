@@ -159,6 +159,7 @@ def build_prison_conditions_df():
     prison_status_df["pop_2020"].fillna(prison_status_df["pop_2018"],
                                         inplace=True)
     prison_status_df = prison_status_df.dropna()
+    prison_status_df.reset_index(inplace=True, drop=True)
 
     return prison_status_df
 

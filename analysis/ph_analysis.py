@@ -90,8 +90,12 @@ def run_temporal_cv(temporal_splits, features, target, models, grid):
         - models: (dict) a dictionary containing the models we will be using
                    to predict the target 
         - grid: (dict) a dictionary containing the various combinations of 
-                 parameters will be be running for each model     
-            
+                 parameters will be be running for each model
+ 
+    Returns: 
+        - cv_eval: (pandas df) a dataframe containing the results of the temporal
+                    cross validation: the performance of each model on each time
+                    split across a number of metrics   
     '''
     cv_eval = []
 
@@ -104,7 +108,9 @@ def run_temporal_cv(temporal_splits, features, target, models, grid):
                                      models, grid)
         cv_eval.append(model_perf)
 
-    cv_df = pd.concat[model_dfs]
+    cv_df = pd.concat(cv_eval)
+    cv_df.reset_index(inplace=True)
+    cv_df.rename(columns={"index": "model"}, inplace=True)
 
     return cv_df
 
