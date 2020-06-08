@@ -771,6 +771,9 @@ def split_and_process(df,config,target):
 
     active_almost_complete = active_sentences[active_sentences['almost_complete'] == 1]
 
+    active_sentences.drop(['sent_total', 'sent_complete', 'almost_complete'],inplace=True, axis=1)
+    active_almost_complete.drop(['sent_total', 'sent_complete', 'almost_complete'],inplace=True, axis=1)
+
     return train_data, test_data, validate_data, active_sentences, active_almost_complete
 
 def sanity_check(train_df, test_df):
