@@ -526,15 +526,6 @@ def get_unemployment(df):
 
     return df
 
-def get_sentence_almost_complete(df):
-    # Flag if individual has completed at least 75 percent of sentence
-    today = pd.to_datetime('today')
-    df['sent_total'] = (df['END_DATE'] - df['EARLIEST_SENTENCE_EFFECTIVE_DT']).dt.days
-    df['sent_complete'] = (today - df['EARLIEST_SENTENCE_EFFECTIVE_DT']).dt.days
-    df['almost_complete'] = ((df['sent_complete'] / df['sent_total']) >= 0.75)
-
-    return df
-
 def trim_data(df):
     # Trim data to start in 1976 to match unemployment data
     df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1976]
@@ -578,7 +569,6 @@ def construct_features_before_split(df):
 
     df = get_age(df)
     df = get_unemployment(df)
-    df = get_sentence_almost_complete(df)
     df = trim_data(df)
     df = recode_most_serious_offense(df)
     df = get_total_sent_count(df)
@@ -668,7 +658,6 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
     print("Does Validate Represent 20% of the Train+Validate Data?:", len(validate_data.ID.unique())/(len(train_data.ID.unique())+len(validate_data.ID.unique())))
     print("Does Train Represent 80% of the Train+Validate Data?:", len(train_data.ID.unique())/(len(train_data.ID.unique())+len(validate_data.ID.unique())))
 
-
     return active_sentences, train_data, validate_data, test_data
 
 def imputation(df,categorical_vars_to_impute,continuous_vars_to_impute):
@@ -709,6 +698,7 @@ def construct_vars_post_impute(df):
 
     # construct current crime violent flag
     df = pl.current_crime_violent(df,[4,5])
+
 
     return df
 
@@ -765,6 +755,14 @@ def split_and_process(df,config,target):
     train_data, test_data = pl.one_hot_adjust_test(train_data,test_data)
     train_data, validate_data = pl.one_hot_adjust_test(train_data,validate_data)
     train_data, active_sentences = pl.one_hot_adjust_test(train_data,active_sentences)
+
+    # Flag if individual has completed at least 75 percent of sentence
+    today = pd.to_datetime('today')
+    active_sentences['END_DATE'] = pd.to_datetime(active_sentences['END_DATE'], yearfirst=True)
+
+    active_sentences['sent_total'] = (active_sentences['END_DATE'] - active_sentences['EARLIEST_SENTENCE_EFFECTIVE_DT']).dt.days
+    active_sentences['sent_complete'] = (today - active_sentences['EARLIEST_SENTENCE_EFFECTIVE_DT']).dt.days
+    active_sentences['almost_complete'] = ((active_sentences['sent_complete'] / active_sentences['sent_total']) >= 0.75)
 
     train_data.drop(ID_vars,inplace=True,axis=1)
     test_data.drop(ID_vars,inplace=True,axis=1)
