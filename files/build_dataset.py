@@ -23,10 +23,10 @@ def query_court_computation(db_name):
         # infraction resulting in incarceration. (dataset A)
     start = datetime.datetime.now()
     query_court_commitment = '''
-                            SELECT A.OFFENDER_NC_DOC_ID_NUMBER as ID, 
-                                A.COMMITMENT_PREFIX, 
-                                A.EARLIEST_SENTENCE_EFFECTIVE_DT, 
-                                A.MOST_SERIOUS_OFFENSE_CODE                              
+                            SELECT A.OFFENDER_NC_DOC_ID_NUMBER as ID,
+                                A.COMMITMENT_PREFIX,
+                                A.EARLIEST_SENTENCE_EFFECTIVE_DT,
+                                A.MOST_SERIOUS_OFFENSE_CODE
                             FROM OFNT3BB1 A
                             WHERE NEW_PERIOD_OF_INCARCERATION_FL = "Y";
                             '''
@@ -36,9 +36,9 @@ def query_court_computation(db_name):
 
 
     query_sentence_comp = '''
-                                SELECT INMATE_DOC_NUMBER as ID, 
-                                    INMATE_COMMITMENT_PREFIX as COMMITMENT_PREFIX, 
-                                    INMATE_COMPUTATION_STATUS_FLAG, 
+                                SELECT INMATE_DOC_NUMBER as ID,
+                                    INMATE_COMMITMENT_PREFIX as COMMITMENT_PREFIX,
+                                    INMATE_COMPUTATION_STATUS_FLAG,
                                     max(ACTUAL_SENTENCE_END_DATE) as END_DATE,
                                     max(PROJECTED_RELEASE_DATE_PRD) as PROJ_END_DATE
                                 FROM INMT4BB1
@@ -49,7 +49,7 @@ def query_court_computation(db_name):
 
 
     query_inmt_profile = '''
-                        SELECT 
+                        SELECT
                             INMATE_DOC_NUMBER as ID,
                             INMATE_RECORD_STATUS_CODE,
                             INMATE_ADMIN_STATUS_CODE,
@@ -69,7 +69,7 @@ def query_court_computation(db_name):
                         '''
 
     query_inmt_profile = '''
-                        SELECT 
+                        SELECT
                             INMATE_DOC_NUMBER as ID,
                             INMATE_RECORD_STATUS_CODE,
                             INMATE_ADMIN_STATUS_CODE,
@@ -83,16 +83,16 @@ def query_court_computation(db_name):
     inmt_profile = qd.query_db(conn,query_inmt_profile)
 
     query_offender_profile = '''
-                            SELECT 
+                            SELECT
                             OFFENDER_NC_DOC_ID_NUMBER as ID,
                             OFFENDER_GENDER_CODE as GENDER,
                             OFFENDER_RACE_CODE as RACE,
                             OFFENDER_BIRTH_DATE as BIRTH_DATE,
                             STATE_WHERE_OFFENDER_BORN as STATE_BORN,
                             OFFENDER_ETHNIC_CODE as ETHNICITY,
-                            OFFENDER_CITIZENSHIP_CODE as CITIZENSHIP                        
+                            OFFENDER_CITIZENSHIP_CODE as CITIZENSHIP
                         FROM OFNT3AA1;
-                                
+
                             '''
 
     offender_profile = qd.query_db(conn,query_offender_profile)
@@ -106,7 +106,7 @@ def query_court_computation(db_name):
 
 
     stop = datetime.datetime.now()
-    print("Time Elapsed:", stop - start) 
+    print("Time Elapsed:", stop - start)
 
     return data
 
@@ -117,8 +117,8 @@ def query_sent_comp(db_name):
     start = datetime.datetime.now()
 
     query_sentence_component = '''
-                                SELECT OFFENDER_NC_DOC_ID_NUMBER as ID, 
-                                            COMMITMENT_PREFIX, 
+                                SELECT OFFENDER_NC_DOC_ID_NUMBER as ID,
+                                            COMMITMENT_PREFIX,
                                             SENTENCE_COMPONENT_NUMBER,
                                             PRIMARY_OFFENSE_CODE,
                                             PRIMARY_FELONYMISDEMEANOR_CD,
@@ -136,7 +136,7 @@ def query_sent_comp(db_name):
     sent_comp_small = qd.query_db(conn,query_sentence_component)
 
     stop = datetime.datetime.now()
-    print("Time Elapsed:", stop - start) 
+    print("Time Elapsed:", stop - start)
 
     return sent_comp_small
 
@@ -226,7 +226,7 @@ def combine(datasetA,datasetB):
 
     # merging on datasetA (court commitment + sentence computation) with datasetB ("self constructed" primary offenses from
     # sentence component)
-    data_A_B = datasetA.merge(datasetB_primary_offense, on = ['ID','COMMITMENT_PREFIX'], how='left') 
+    data_A_B = datasetA.merge(datasetB_primary_offense, on = ['ID','COMMITMENT_PREFIX'], how='left')
 
     return data_A_B
 
@@ -252,18 +252,18 @@ def get_recidivism_label(data,num_years=1):
     data.loc[(data['NextPrefix']!=0) & (data['Time_Diff']> num_years), 'Recidivate'] = 0
     # dealing with small amount of negative Time_diff - data errors or concurrent sentences
     data.loc[(data['NextPrefix']!=0) & (data['Time_Diff']< 0), 'Recidivate'] = 0
-    
-    
-    # if nextprefix = 0, inmate is inactive, and they did not die in prison 
-    # (e.g. serving life sentence or  other wise) then 
+
+
+    # if nextprefix = 0, inmate is inactive, and they did not die in prison
+    # (e.g. serving life sentence or  other wise) then
     # recidivism = 0
     data.loc[(data['NextPrefix']==0) & (data['INMATE_ADMIN_STATUS_CODE']=='INACTIVE') & (data['TYPE_OF_LAST_INMATE_MOVEMENT']!='DEATH'), 'Recidivate'] = 0
-    
-    # if nextprefix = 0, inmate status code is not active or inactive(could be missing) and 
+
+    # if nextprefix = 0, inmate status code is not active or inactive(could be missing) and
     # end date is not 2261-01-02 (life sentence), they were likely released from prison
     # recidivism = 0
     data.loc[(data['NextPrefix']==0) & (data['INMATE_ADMIN_STATUS_CODE']!='ACTIVE') & (data['INMATE_ADMIN_STATUS_CODE']!='INACTIVE') & (data['END_DATE']!='2261-01-02'), 'Recidivate'] = 0
-    
+
     return data
 
 def get_recidivism_flag(data_A_B,num_years=1):
@@ -301,7 +301,7 @@ def get_recidivism_flag(data_A_B,num_years=1):
     start = datetime.datetime.now()
     # https://stackoverflow.com/questions/37360901/sql-self-join-compare-current-record-with-the-record-of-the-previous-date
     query_datasetAB = '''
-                            SELECT *, 
+                            SELECT *,
                             LEAD(COMMITMENT_PREFIX,1,0) OVER (
                                                         PARTITION BY ID
                                                         ORDER BY COMMITMENT_PREFIX
@@ -313,8 +313,8 @@ def get_recidivism_flag(data_A_B,num_years=1):
                             LEAD(MOST_SERIOUS_OFFENSE_CODE,1,0) OVER (
                                                         PARTITION BY ID
                                                         ORDER BY COMMITMENT_PREFIX
-                                                        ) NextOffense                                                    
-                                                        
+                                                        ) NextOffense
+
                             FROM data ;
 
                             '''
@@ -323,10 +323,10 @@ def get_recidivism_flag(data_A_B,num_years=1):
     dataset_flag = qd.query_db(conn,query_datasetAB)
     conn.close
     stop = datetime.datetime.now()
-    print("Time Elapsed:", stop - start) 
+    print("Time Elapsed:", stop - start)
 
     # Part D continued
-    # Step 3. 
+    # Step 3.
     # call fix dates function to fix relevant dates
     print("Fix Dates")
     dataset_flag = fix_dates(dataset_flag,'EARLIEST_SENTENCE_EFFECTIVE_DT')
@@ -334,7 +334,7 @@ def get_recidivism_flag(data_A_B,num_years=1):
     dataset_flag = fix_dates(dataset_flag,'NextStart')
 
     # Step 4
-    # get recidivism flag - see decision rules and function above 
+    # get recidivism flag - see decision rules and function above
     print("Get recidivism flag")
     dataset_flag = get_recidivism_label(dataset_flag,num_years)
 
@@ -359,7 +359,7 @@ def get_additional_features(db_name,dataset_flag):
             AND A.DISCIPLINARY_INFRACTION_DATE <= B.END_DATE
             GROUP BY INMATE_DOC_NUMBER, COMMITMENT_PREFIX
             ;
-            
+
             '''
 
     disc_infraction = qd.query_db(conn,query)
@@ -413,7 +413,7 @@ def get_coded_offenses(dataset_flag):
 
     # this merges our coded offenses onto "most serious offense" to check how much coverage
     # our variable is giving us. however, this not what we ultimately want - in the end, we want
-    # our codes to be merged onto "nextOffense" - i.e., the offense code for the next offense 
+    # our codes to be merged onto "nextOffense" - i.e., the offense code for the next offense
     # someone committed that resulted in re-incarceration
     # NextOffense can be missing for 2 reasons: because most serious offense is missing, or because
     # the individual did not recidivate. after merging our codes onto "NextOffense", we can replace
@@ -435,8 +435,8 @@ def get_coded_offenses(dataset_flag):
     print("Dataset size: " , dataset_with_offenses.shape[0])
 
 
-    # Step 10 
-    # Add active sentences back in so we can merge our coded categories onto Most Serious Offense and so 
+    # Step 10
+    # Add active sentences back in so we can merge our coded categories onto Most Serious Offense and so
     # all the data is together when we construct features we'll need before pre processing (e.g. economic vars,
     # age vars)
     dataset_with_offenses = dataset_with_offenses.append(active_sentences)
@@ -472,8 +472,8 @@ def build_all(db_name,num_years):
     dataset_final = get_coded_offenses(dataset_flag)
 
     stop = datetime.datetime.now()
-    print("Time Elapsed:", stop - start) 
-    
+    print("Time Elapsed:", stop - start)
+
     dataset_final.to_csv('../data/dataset_main_active'+str(num_years)+'.csv', index=False)
 
     return dataset_final
@@ -512,7 +512,7 @@ def get_unemployment(df):
     # Create a str column to merge on
     df['date_to_merge'] = df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.strftime('%Y-%m')
 
-    # Rename variables 
+    # Rename variables
     unemployment = unemployment.rename(columns={"Value": "unemp_rate"})
     unemployment_limited = unemployment[['date_to_merge','unemp_rate']]
 
@@ -524,14 +524,23 @@ def get_unemployment(df):
     # Check how many are missing
     df['unemp_rate'].isnull().sum() / df.shape[0]
 
-    return df 
+    return df
+
+def get_sentence_almost_complete(df):
+    # Flag if individual has completed at least 75 percent of sentence
+    today = pd.to_datetime('today')
+    df['sent_total'] = (df['END_DATE'] - df['EARLIEST_SENTENCE_EFFECTIVE_DT']).dt.days
+    df['sent_complete'] = (today - df['EARLIEST_SENTENCE_EFFECTIVE_DT']).dt.days
+    df['almost_complete'] = ((df['sent_complete'] / df['sent_total']) >= 0.75)
+
+    return df
 
 def trim_data(df):
     # Trim data to start in 1976 to match unemployment data
     df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1976]
     df['EARLIEST_SENTENCE_EFFECTIVE_DT'].describe()
 
-    return df 
+    return df
 
 def recode_most_serious_offense(df,threshold=0.9):
     # Most serious current offense v1
@@ -548,7 +557,7 @@ def recode_most_serious_offense(df,threshold=0.9):
     # Merge this back onto main dataset
     df = df.merge(most_offenses, how="left", on="MOST_SERIOUS_OFFENSE_CODE")
 
-    return df 
+    return df
 
 def get_total_sent_count(df):
     count = df.groupby(['ID','COMMITMENT_PREFIX']).count().groupby(level=0).cumsum().reset_index()
@@ -556,25 +565,26 @@ def get_total_sent_count(df):
     count = count.loc[:,['ID','COMMITMENT_PREFIX','sentence_count']]
     df = df.merge(count, how="left", on = ['ID','COMMITMENT_PREFIX'])
 
-    return df 
+    return df
 
 def add_time_fixed_effects(df):
     # Add time fixed effects (year-month)
     df.rename(columns={'date_to_merge': 'year_month'}, inplace=True)
     df['year_month'].sample(10)
 
-    return df 
+    return df
 
 def construct_features_before_split(df):
 
     df = get_age(df)
     df = get_unemployment(df)
+    df = get_sentence_almost_complete(df)
     df = trim_data(df)
     df = recode_most_serious_offense(df)
     df = get_total_sent_count(df)
     df = add_time_fixed_effects(df)
 
-    return df 
+    return df
 
 def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,target):
 
@@ -582,7 +592,9 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
 
     # hold out active sentences
     active_sentences = df[(df['INMATE_ADMIN_STATUS_CODE']=='ACTIVE') & (df['NextPrefix']=="NONE") ]
-    print("Size of active sentences dataset: ",active_sentences.shape[0])    
+    active_almost_complete = active_sentences[active_sentences['almost_complete'] == 1]
+    print("Size of active sentences dataset: ",active_sentences.shape[0])
+    print("Size of almost active sentences dataset: ",active_almost_complete.shape[0])
 
     # Drop those missing decided category
     dataset_no_active = df.loc[df['Recidivate_Risk_Level'].notnull(),:]
@@ -596,10 +608,10 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
         dataset_no_active.loc[dataset_no_active[target_label]==0, 'label'] = 0
         dataset_no_active.loc[dataset_no_active[target_label]!=0, 'label'] = 1
 
-        dataset_no_active.drop(target_label,inplace=True,axis=1) 
-        
+        dataset_no_active.drop(target_label,inplace=True,axis=1)
+
         dataset_no_active[target_label] = dataset_no_active['label']
-        dataset_no_active.drop('label',inplace=True,axis=1) 
+        dataset_no_active.drop('label',inplace=True,axis=1)
 
         # DO SOMETHING TO TARGET LABEL TO MAKE THIS BINARY
         # THEN DROP TARGET_LABEL
@@ -611,10 +623,10 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
         dataset_no_active.loc[dataset_no_active[target_label]==4, 'label'] = 2
         dataset_no_active.loc[dataset_no_active[target_label]==5, 'label'] = 2
 
-        dataset_no_active.drop(target_label,inplace=True,axis=1) 
+        dataset_no_active.drop(target_label,inplace=True,axis=1)
 
         dataset_no_active[target_label] = dataset_no_active['label']
-        dataset_no_active.drop('label',inplace=True,axis=1) 
+        dataset_no_active.drop('label',inplace=True,axis=1)
         # DO SOMETHING TO TARGET LABEL TO MAKE THIS 3-class
         # THEN DROP TARGET_LABEL
 
@@ -659,12 +671,12 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
     print("Does Train Represent 80% of the Train+Validate Data?:", len(train_data.ID.unique())/(len(train_data.ID.unique())+len(validate_data.ID.unique())))
 
 
-    return active_sentences, train_data, validate_data, test_data
+    return active_sentences, active_almost_complete, train_data, validate_data, test_data
 
 def imputation(df,categorical_vars_to_impute,continuous_vars_to_impute):
     # impute categorical vars
     df = pl.impute_most_common(df,categorical_vars_to_impute)
-    
+
     # impute continuous vars
     df = pl.impute_missing(df,continuous_vars_to_impute)
 
@@ -676,8 +688,8 @@ def construct_vars_post_impute(df):
                                     bins=[0,17,21,24,29,34,39,44,49,54,59,64,90],
                                     labels=['Under 18', '18-21','22-24','25-29','30-34','35-39','40-44','45-49',
                                             '50-54','55-59','60-64','65 and older',])
-    
-    
+
+
     # Compute age at first incarceration
     first_incarceration = pd.DataFrame(df.groupby(['ID'])['EARLIEST_SENTENCE_EFFECTIVE_DT'].min().reset_index(name='first_incarceration_date'))
     df = df.merge(first_incarceration, on='ID')
@@ -694,16 +706,16 @@ def construct_vars_post_impute(df):
     df['age_first_offense'].describe()
 
     df['juv_first_offense'] = (df['age_first_offense'] < 18)
-    
+
     df.drop('first_incarceration_date',axis=1,inplace=True)
 
     # construct current crime violent flag
     df = pl.current_crime_violent(df,[4,5])
 
-    return df 
+    return df
 
 def process_features(train_data,df,categorical_vars_one_hot,continuous_vars_normalize):
-    
+
     df = pl.one_hot_encode(df,categorical_vars_one_hot)
 
     # def normalize_features(to_norm, train, features):
@@ -713,7 +725,7 @@ def process_features(train_data,df,categorical_vars_one_hot,continuous_vars_norm
 
 #def adjust_one_hot():
 
-# 
+#
 def split_and_process(df,config,target):
     df = construct_features_before_split(df)
     keep_vars = config.keep_vars
@@ -735,7 +747,7 @@ def split_and_process(df,config,target):
 
     test_data = imputation(test_data,cat_impute_vars,cont_impute_vars)
     test_data = construct_vars_post_impute(test_data)
-    
+
     validate_data = imputation(validate_data,cat_impute_vars,cont_impute_vars)
     validate_data = construct_vars_post_impute(validate_data)
 
@@ -750,7 +762,7 @@ def split_and_process(df,config,target):
     test_data = process_features(train_backup,test_data,one_hot,normalize)
     validate_data = process_features(train_backup,validate_data,one_hot,normalize)
     active_sentences = process_features(train_backup,active_sentences,one_hot,normalize)
-    
+
     # adjust one hot
     train_data, test_data = pl.one_hot_adjust_test(train_data,test_data)
     train_data, validate_data = pl.one_hot_adjust_test(train_data,validate_data)
@@ -761,12 +773,10 @@ def split_and_process(df,config,target):
     validate_data.drop(ID_vars,inplace=True,axis=1)
     active_sentences.drop(ID_vars,inplace=True,axis=1)
 
-
-
     return train_data, test_data, validate_data, active_sentences
 
-def sanity_check(train_df, test_df): 
-    
+def sanity_check(train_df, test_df):
+
     # Sort features alphabetically
     train_df = train_df.reindex(sorted(train_df.columns), axis=1)
     test_df = test_df.reindex(sorted(test_df.columns), axis=1)
