@@ -98,6 +98,7 @@ def run_temporal_cv(temporal_splits, features, target, models, grid):
     for cv in temporal_splits:
         train = cv['train']
         test = cv['test']
+        test_week = cv['test_week']
 
         model_perf = run_grid_search(train, test, test_week, features, target, 
                                      models, grid)
