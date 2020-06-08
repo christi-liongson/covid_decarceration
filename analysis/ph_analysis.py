@@ -8,6 +8,17 @@ import numpy as numpy
 import pandas as pd 
 import build_prison_conditions_df as bpc 
 import clean_data
+from sklearn import linear_model
+
+MODELS = {'LinearRegression': linear_model.LinearRegression(),
+    'Lasso': linear_model.Lasso()
+    'Ridge': linear_model.Ridge()}
+
+GRID = {'LinearRegression': {'normalize': False, 'fit_intercept': True}
+        'Lasso': [{'alpha': x, 'random_state': 0} \
+                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]
+        'Ridge': [{'alpha': x, 'random_state': 0} \
+                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}    
 
 
 def timesplit_data(): 
@@ -46,21 +57,60 @@ def time_cv_split(train):
                             (split_number, week, data from that week)
     '''
     train_cv_splits = []
+    
+    earliest = train["as_of_date"].iloc[0].week
+    latest = train["as_of_date"].iloc[-1].week
 
-    earliest_train_week = train["as_of_date"].iloc[0].week
-    latest_train_week = train["as_of_date"].iloc[-1].week
-
-    split_number = 0
-    for week in range(earliest_train_week, latest_train_week + 1):
-        split = train.loc[train['as_of_date'].dt.week == week].copy()        
-        train_cv_splits.append((split_number, week, split))
-        split_number += 1
+    ## Ignore first week; the "lag" and "new_cases" data are all missing 
+    ## because there's no data before the first week of data. Start the
+    ## temporal cross validation with week 2 of data predicting week 3 of data.
+    for week in range(earliest + 1, latest):
+        cv_train = train.loc[(train['as_of_date'].dt.week <= week) &
+                             (train['as_of_date'].dt.week != earliest)].copy()
+        cv_test = train.loc[train['as_of_date'].dt.week = week + 1].copy()       
+        train_cv_splits.append({'test_week': week + 1,
+                                'train': cv_train,
+                                'test': cv_test})
 
     return train_cv_splits
 
 
+def run_temporal_cv(temporal_splits, features, target, models, grid):
+    '''
+    Runs a temporal cross validation process. For each temporal split in the
+    data, run a grid search to find the best model. 
+
+    Inputs: 
+        - temporal_splits: (lst) a list of dictionaries, where each dictionaries
+                            keys are test_week (the week in the testing set), 
+                            train (the temporal cv training set), and test (the
+                            temporal cv validation set)
+        - features: (lst) a list of features used to predict the target
+        - target: (str) the target we are trying to predict
+        - models: (dict) a dictionary containing the models we will be using
+                   to predict the target 
+        - grid: (dict) a dictionary containing the various combinations of 
+                 parameters will be be running for each model     
+            
+    '''
+    cv_eval = []
+
+    for cv in temporal_splits:
+        train = cv['train']
+        test = cv['test']
+
+        model_perf = run_grid_search(train, test, test_week, features, target, 
+                                     models, grid)
+        cv_eval.append(model_perf)
+
+    cv_df = pd.concat[model_dfs]
+
+    return cv_df
+
+
 # Build Classifiers: Run a grid search, run a single model
-def run_grid_search(train_df, test_df, features, target, models, grid):
+def run_grid_search(train_df, test_df, test_week, features, target, models, 
+                    grid):
     '''
     Runs a grid search by running multiple instances of a number of classifier
     models using different parameters
@@ -68,6 +118,7 @@ def run_grid_search(train_df, test_df, features, target, models, grid):
     Inputs:    
         - train_df: (pandas dataframe) a dataframe containing the training set
         - test_df: (pandas dataframe) a dataframe containing the testing set
+        - test_week: (int) the week of the year represented in the testing set
         - features: (lst) a list of column names we are using to predict an
                      outcome
         - target: (str) a column name for the outcome we are predicting
@@ -92,7 +143,8 @@ def run_grid_search(train_df, test_df, features, target, models, grid):
             build_classifier(train_df, test_df, features, target, model_type, 
                              param, model_perf)
 
-    model_compare = pd.DataFrame(model_perf)
+    model_compare = pd.DataFrame(model_perf).transpose()
+    model_compare['test_week'] = test_week
 
     return model_compare 
 
@@ -160,22 +212,23 @@ def evaluate_model(test_df, target, predictions, verbose=True):
     '''
     eval_metrics = {}
     
-    acc = metrics.accuracy_score(test_df[target], predictions)
-    precise = metrics.precision_score(test_df[target], predictions)
-    recall = metrics.recall_score(test_df[target], predictions)
-    f1 = metrics.f1_score(test_df[target], predictions)
+    mse = metrics.mean_squared_error(test_df[target], predictions)
+    mae = metrics.mean_absolute_error(test_df[target], predictions)
+    r2 = metrics.r2_score(test_df[target], predictions)
+    rss = ((predictions - test_df[target]) ** 2).sum()
 
-    eval_metrics["accuracy"] = acc
-    eval_metrics["precision"] = precise
-    eval_metrics["recall"] = recall
-    eval_metrics["f1"] = f1
+
+    eval_metrics["mse"] = mse
+    eval_metrics["mae"] = mae
+    eval_metrics["r2"] = r2
+    eval_metrics["rss"] = rss
     
     if verbose: 
         print("""
-              accuracy:\t{}
-              precision:\t{}
-              recall:\t{}
-              f1:\t{}
-              """.format(acc, precise, recall, f1))
+              mse:\t{}
+              mae:\t{}
+              r2:\t{}
+              rss:\t{}
+              """.format(mse, mae, r2, rss))
     
     return eval_metrics
