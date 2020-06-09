@@ -30,13 +30,13 @@ continuous_vars_to_impute = ['INFRACTION_PER_SENT','misd_count','felon_count','s
 
 categorical_vars_one_hot = categorical_vars_to_impute + ['age_cat']
 #categorical_vars_one_hot = categorical_vars_to_impute
-continuous_vars_normalize = continuous_vars_to_impute 
-#continuous_vars_normalize = continuous_vars_to_impute 
+continuous_vars_normalize = continuous_vars_to_impute
+#continuous_vars_normalize = continuous_vars_to_impute
 #age_unemp_features = ['age_at_sentence', 'age_cat', 'juv_first_offense','unemp_rate', 'year_month']
 
 grouping_target = "binary"
 target_vars = ['Recidivate_Risk_Level']
-ID_vars = ['ID','COMMITMENT_PREFIX','BIRTH_DATE','EARLIEST_SENTENCE_EFFECTIVE_DT','INMATE_ADMIN_STATUS_CODE','NextPrefix']
+ID_vars = ['ID','COMMITMENT_PREFIX','BIRTH_DATE', 'EARLIEST_SENTENCE_EFFECTIVE_DT', 'END_DATE', 'INMATE_ADMIN_STATUS_CODE','NextPrefix']
 keep_vars = target_vars + categorical_vars_to_impute + continuous_vars_to_impute + ID_vars
 
 MODELS = {
@@ -49,24 +49,21 @@ MODELS = {
 
 PARAMS = {
     'LogisticRegression': {
-        'penalty': ['l2','none'], 
-        'C': [0.01, 0.1, 1, 10, 100], 
+        'penalty': ['l2','none'],
+        'C': [0.01, 0.1, 1, 10, 100],
         'max_iter':[1000]
         },
     'DecisionTreeClassifier': {
         'criterion': ('gini','entropy'),
         'max_depth': (10,20,30,None),
-        'min_samples_split': (5,50,100) ,
-
+        'min_samples_split': (5,50,100)
     },
     'RandomForestClassifier':{
     'criterion': ('gini','entropy'),
-    'n_estimators': (10,20, 30, 100,1000),
+    'n_estimators': (100,1000,5000),
     'max_depth': (10,20,30,None),
     'min_samples_split':(5,50,100)
-    },
-    'GaussianNB': {'priors': [None]},
-    'LinearSVC': {'C': [0.01, 0.1, 1, 10, 100]}
+    }
 
 
 }
