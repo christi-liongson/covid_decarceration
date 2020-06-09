@@ -576,7 +576,7 @@ def construct_features_before_split(df):
 
     return df
 
-def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,target):
+def train_test_validate_active_split(df,holdOut,randomState,config,target,keep_vars):
 
     df = df.loc[:,keep_vars]
 
@@ -662,6 +662,7 @@ def train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,tar
 
 def imputation(df,categorical_vars_to_impute,continuous_vars_to_impute):
     # impute categorical vars
+    #print(categorical_vars_to_impute)
     df = pl.impute_most_common(df,categorical_vars_to_impute)
 
     # impute continuous vars
@@ -714,19 +715,29 @@ def process_features(train_data,df,categorical_vars_one_hot,continuous_vars_norm
 #def adjust_one_hot():
 
 #
-def split_and_process(df,config,target):
+def split_and_process(df,config,target_type,features):
     df = construct_features_before_split(df)
-    keep_vars = config.keep_vars
     holdOut = config.holdOut
     randomState = config.randomState
     ID_vars = config.ID_vars
 
-    cat_impute_vars = config.categorical_vars_to_impute
     cont_impute_vars = config.continuous_vars_to_impute
 
-    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,keep_vars,holdOut,randomState,config,target)
+    if features == "Demographics":
+        cat_impute_vars = config.categorical_vars_to_impute_demographics   
+        keep_vars = config.keep_vars_demographics
+        one_hot = config.categorical_vars_one_hot_demographics     
+        #print(cat_impute_vars)
+        #print(keep_vars)
+    if features == "No Demographics":
+        cat_impute_vars = config.categorical_vars_to_impute_nodemographics
+        keep_vars = config.keep_vars_nodemographics
+        one_hot = config.categorical_vars_one_hot_nodemographics
+        #print(cat_impute_vars)
+        #print(keep_vars)
 
-    one_hot = config.categorical_vars_one_hot
+    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,holdOut,randomState,config,target_type,keep_vars)
+
     normalize = config.continuous_vars_normalize
 
     # impute and construct vars post impute

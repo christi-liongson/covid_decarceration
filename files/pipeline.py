@@ -200,8 +200,10 @@ def impute_most_common(df, vars_to_impute):
 
     Returns: updated DataFrame with no missing values
     '''
+    #print(vars_to_impute)
     for col in vars_to_impute:
-        df[col] = df[col].fillna(df[col].mode())
+        df[col] = df[col].fillna(df[col].mode().values[0])
+        #print(df[col].isnull().sum())
         #df[col].fillna(df[col].mode()[0],inplace=True)
         #df[col] = df[col].fillna(df[col].median())
 
