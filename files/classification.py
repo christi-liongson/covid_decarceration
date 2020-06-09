@@ -56,7 +56,7 @@ def PR_curve(model,x_test,y_test,target_type):
         plot_precision_recall_curve(model,x_test,y_test)
         plt.show()
 
-def run_classifier(train_data,validate_data,test_data,target_type):
+def run_classifier(train_data,validate_data,test_data,target_type,features_dem):
     # Begin timer 
     start = datetime.datetime.now()
 
@@ -174,6 +174,8 @@ def run_classifier(train_data,validate_data,test_data,target_type):
                 'test_f1': f1
                 },ignore_index=True)
         
+        best_model.to_csv('../results/best_models_'+target_type+'_'+features_dem+'.csv', index=False)
+        results.to_csv('../results/results'+target_type+'_'+features_dem+'.csv', index=False)
     
     # End timer
     stop = datetime.datetime.now()
