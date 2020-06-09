@@ -43,8 +43,8 @@ keep_vars_demographics = target_vars + categorical_vars_to_impute_demographics +
 keep_vars_nodemographics = target_vars + categorical_vars_to_impute_nodemographics + continuous_vars_to_impute + ID_vars
 
 MODELS = {
-    'LogisticRegression': LogisticRegression(random_state=randomState, solver='lbfgs'), 
-    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=randomState), 
+    'LogisticRegression': LogisticRegression(random_state=randomState, solver='lbfgs'),
+    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=randomState)#, 
     #'RandomForestClassifier': RandomForestClassifier(random_state=randomState),
     #'GaussianNB': GaussianNB(),
     # 'LinearSVC': LinearSVC(random_state=randomState)

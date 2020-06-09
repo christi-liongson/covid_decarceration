@@ -528,7 +528,14 @@ def get_unemployment(df):
 
 def trim_data(df):
     # Trim data to start in 1976 to match unemployment data
-    df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 2008]
+    #df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1976]
+
+    # Trim data to start in 1995 to match Fair Sentencing Act
+    df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1994]
+
+    # Trim data to start in 2008 to match peak of mass incarceration
+    #df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 2008]
+
     df['EARLIEST_SENTENCE_EFFECTIVE_DT'].describe()
 
     return df
@@ -724,9 +731,9 @@ def split_and_process(df,config,target_type,features):
     cont_impute_vars = config.continuous_vars_to_impute
 
     if features == "Demographics":
-        cat_impute_vars = config.categorical_vars_to_impute_demographics   
+        cat_impute_vars = config.categorical_vars_to_impute_demographics
         keep_vars = config.keep_vars_demographics
-        one_hot = config.categorical_vars_one_hot_demographics     
+        one_hot = config.categorical_vars_one_hot_demographics
         #print(cat_impute_vars)
         #print(keep_vars)
     if features == "No Demographics":
