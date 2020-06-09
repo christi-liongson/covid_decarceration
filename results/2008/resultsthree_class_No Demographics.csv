@@ -3,21 +3,21 @@ classifier,params,rank_test_precision,rank_test_recall,rank_test_accuracy,rank_t
                    intercept_scaling=1, l1_ratio=None, max_iter=1000,
                    multi_class='auto', n_jobs=None, penalty='none',
                    random_state=1234, solver='lbfgs', tol=0.0001, verbose=0,
-                   warm_start=False)","{'C': 0.01, 'max_iter': 1000, 'penalty': 'none'}",1,1,2,1,0.7914471805098501,0.3431949094289071,0.3433080358021457,0.3395452870318089
+                   warm_start=False)","{'C': 0.01, 'max_iter': 1000, 'penalty': 'none'}",1,1,2,1,0.8681725016343226,0.3334443800929577,0.30938609306355785,0.3115458235385567
 "LogisticRegression(C=0.01, class_weight=None, dual=False, fit_intercept=True,
                    intercept_scaling=1, l1_ratio=None, max_iter=1000,
                    multi_class='auto', n_jobs=None, penalty='none',
                    random_state=1234, solver='lbfgs', tol=0.0001, verbose=0,
-                   warm_start=False)","{'C': 0.01, 'max_iter': 1000, 'penalty': 'l2'}",2,2,1,2,0.8564730652780028,0.3335360493930389,0.34106486567016137,0.3079731357292892
+                   warm_start=False)","{'C': 0.01, 'max_iter': 1000, 'penalty': 'l2'}",2,2,1,2,0.8699297667911757,0.3333333333333333,0.28997658893039197,0.31014665120815116
 "DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='entropy',
-                       max_depth=10, max_features=None, max_leaf_nodes=None,
+                       max_depth=30, max_features=None, max_leaf_nodes=None,
                        min_impurity_decrease=0.0, min_impurity_split=None,
                        min_samples_leaf=1, min_samples_split=100,
                        min_weight_fraction_leaf=0.0, presort='deprecated',
-                       random_state=1234, splitter='best')","{'criterion': 'entropy', 'max_depth': 10, 'min_samples_split': 100}",1,1,1,1,0.8515798663716461,0.3376010159309946,0.3447274705033541,0.3188851907590586
+                       random_state=1234, splitter='best')","{'criterion': 'entropy', 'max_depth': 30, 'min_samples_split': 100}",2,1,2,1,0.8551412311498837,0.33492003413732885,0.3360125911851512,0.32100469934085174
 "DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='entropy',
-                       max_depth=10, max_features=None, max_leaf_nodes=None,
+                       max_depth=30, max_features=None, max_leaf_nodes=None,
                        min_impurity_decrease=0.0, min_impurity_split=None,
                        min_samples_leaf=1, min_samples_split=100,
                        min_weight_fraction_leaf=0.0, presort='deprecated',
-                       random_state=1234, splitter='best')","{'criterion': 'entropy', 'max_depth': 30, 'min_samples_split': 100}",2,2,2,2,0.8425707045260763,0.3347449008240995,0.3355734072719048,0.3181523365212181
+                       random_state=1234, splitter='best')","{'criterion': 'entropy', 'max_depth': 10, 'min_samples_split': 100}",1,2,1,2,0.8678478975751974,0.3345889750886492,0.3681926710574354,0.3141541348367365
