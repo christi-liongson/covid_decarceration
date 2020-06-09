@@ -528,7 +528,7 @@ def get_unemployment(df):
 
 def trim_data(df):
     # Trim data to start in 1976 to match unemployment data
-    df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1976]
+    df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 2008]
     df['EARLIEST_SENTENCE_EFFECTIVE_DT'].describe()
 
     return df
