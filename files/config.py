@@ -42,7 +42,9 @@ keep_vars = target_vars + categorical_vars_to_impute + continuous_vars_to_impute
 MODELS = {
     'LogisticRegression': LogisticRegression(random_state=randomState, solver='lbfgs'), 
     'DecisionTreeClassifier': DecisionTreeClassifier(random_state=randomState), 
-    'RandomForestClassifier': RandomForestClassifier(random_state=randomState)
+    'RandomForestClassifier': RandomForestClassifier(random_state=randomState),
+    'GaussianNB': GaussianNB(),
+    'LinearSVC': LinearSVC(random_state=randomState)
 }
 
 PARAMS = {
@@ -53,15 +55,18 @@ PARAMS = {
         },
     'DecisionTreeClassifier': {
         'criterion': ('gini','entropy'),
-        'max_depth': (1,3,5),
-        'min_samples_split': (2,5,10) 
+        'max_depth': (10,20,30,None),
+        'min_samples_split': (5,50,100) ,
+
     },
     'RandomForestClassifier':{
     'criterion': ('gini','entropy'),
-    'n_estimators': (100,1000,5000),
-    'max_depth': (1,3,5),
-    'min_samples_split':(2,5,10) 
-    }
+    'n_estimators': (10,20, 30, 100,1000),
+    'max_depth': (10,20,30,None),
+    'min_samples_split':(5,50,100)
+    },
+    'GaussianNB': {'priors': [None]},
+    'LinearSVC': {'C': [0.01, 0.1, 1, 10, 100]}
 
 
 }
