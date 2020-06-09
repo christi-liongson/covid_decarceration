@@ -15,6 +15,19 @@ According to data collected by the New York Times, many of the largest outbreaks
 Can we predict the death rate/rate of infection in the prison population without decarceration? Can we predict recidivism rates, with respect to violent crime, if people are de-carcerated? And what qualitative analysis can we contribute to this urgent conversation?
 
 ## Installation:
+To install required packages, run the following command in your command-line interface:
+
+```
+pip install -r requirements.txt
+```
+
+To view the Jupyter notebooks for data preprocessing and analysis, run the following command in your command-line interface to open Jupyter notebooks in your browser from the main project folder:
+
+```
+cd analysis
+jupyter notebook
+```
+
 ### Requirements:
 
 ## Usage:
