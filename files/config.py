@@ -45,7 +45,7 @@ keep_vars_nodemographics = target_vars + categorical_vars_to_impute_nodemographi
 MODELS = {
     'LogisticRegression': LogisticRegression(random_state=randomState, solver='lbfgs'), 
     'DecisionTreeClassifier': DecisionTreeClassifier(random_state=randomState), 
-    'RandomForestClassifier': RandomForestClassifier(random_state=randomState),
+    #'RandomForestClassifier': RandomForestClassifier(random_state=randomState),
     #'GaussianNB': GaussianNB(),
     # 'LinearSVC': LinearSVC(random_state=randomState)
 }
