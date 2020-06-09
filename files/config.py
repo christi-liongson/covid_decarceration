@@ -40,9 +40,11 @@ ID_vars = ['ID','COMMITMENT_PREFIX','BIRTH_DATE', 'EARLIEST_SENTENCE_EFFECTIVE_D
 keep_vars = target_vars + categorical_vars_to_impute + continuous_vars_to_impute + ID_vars
 
 MODELS = {
-    'LogisticRegression': LogisticRegression(random_state=randomState, solver='lbfgs'),
-    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=randomState),
-    'RandomForestClassifier': RandomForestClassifier(random_state=randomState)
+    'LogisticRegression': LogisticRegression(random_state=randomState, solver='lbfgs'), 
+    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=randomState), 
+    'RandomForestClassifier': RandomForestClassifier(random_state=randomState),
+    'GaussianNB': GaussianNB(),
+    'LinearSVC': LinearSVC(random_state=randomState)
 }
 
 PARAMS = {
