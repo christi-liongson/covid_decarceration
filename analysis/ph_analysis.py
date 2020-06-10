@@ -445,3 +445,68 @@ def find_best_model(cv_results):
 
     return best_models
 
+def graph_cv_scores(df, vars_and_labels, grouping, title):
+    '''
+    Inputs: 
+        - df: (pandas dataframe) the dataframe of interest
+        - vars_and_labels: (list) the names of the variable (column name in the dataframe) on the y axis
+        - grouping: (str) the columne name to subgroup the data
+        - title: (str) the title for the plot
+        
+    Returns:
+        - nothing: shows plot in place
+    '''
+    fig, axs = plt.subplots(3, 3, sharex="all", figsize=(10, 10))
+    
+    for x in range(0, 3):
+        degree = x + 1
+        degree_df = df[df['degree'] == degree]
+        for y in range(0, 3):
+            sns.lineplot(degree_df["test_week"], degree_df[vars_and_labels[y]], data=degree_df, hue=grouping, ax=axs[x, y])
+            axs[x, y].get_legend().set_visible(False)
+            axs[x, y].set(xlabel="test_week", ylabel=vars_and_labels[y][1])
+            axs[x, y].set_title("Degree: {} | {}".format(str(degree), vars_and_labels[y]))
+
+    lines, labels = fig.axes[-1].get_legend_handles_labels() 
+    
+    fig.legend(lines, labels, loc="center right", bbox_to_anchor=(1.6, 0.5))
+    fig.suptitle(title)
+    plt.show()
+
+def get_feature_importance(model, params, train, test, features, target, degree=1):
+    '''
+    Runs model with parameters and determines feature importance. Returned
+    dataframe displays features where absolute value of coefficients 
+    are greater than 0.0001, features descending by coefficient
+    
+    Inputs:
+        - model: (sklearn Model) Model object to run fit and predict
+        - params: (dict) dictionary of model parameters
+        - train: (Pandas DataFrame) Training data
+        - test: (Pandas DataFrame) Testing data
+        - features: (lst) a list of features used to predict the target
+        - target: (str) the target we are trying to predict
+    Returns:
+        Pandas dataframe of feature coefficients
+    '''
+    
+    poly = PolynomialFeatures(degree=degree)
+    X_train = poly.fit_transform(train[features].copy())
+    y_train = train[target].copy()
+    X_test = poly.fit_transform(test[features].copy())
+    
+    feature_list = ['1']
+    
+    for deg in range(1, degree+1):
+        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
+
+    test_model = best_model
+    test_model.set_params(**best_params)
+    test_model.fit(X_train, y_train)
+    test_model.predict(X_test)
+    feat_shrink = pd.DataFrame({'Features': feature_list,
+                                'Coefficients': list(test_model.coef_)}) \
+                            .sort_values(by='Coefficients',
+                                         ascending=False).reset_index(drop=True)
+    feat_shrink['Coefficients'] = feat_shrink['Coefficients'].apply(lambda x: abs(x))
+    return feat_shrink[feat_shrink['Coefficients'] > 0.0001]
