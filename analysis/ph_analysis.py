@@ -54,7 +54,64 @@ GRID = {'LinearRegression': {'normalize': False, 'fit_intercept': True}
 ## Functions we still need: 
 ## 1) Look at features: for each set of features, take the best model from the 
 ##    best_model dictionary, re_run it on the last split with the parameters in 
-##    the dictionary. get the feature importance. 
+##    the dictionary. get the feature importance.
+
+def compare_feat_import(best_models, temporal_splits, features=FEATURES, 
+                     target=TARGET, models=MODELS):
+    '''
+    '''
+    train = temporal_splits[-1]['train']
+    test = temporal_splits[-1]['test']
+
+    importances = []
+
+    for feat_type in best_models.keys(): 
+        feat_set = features[feat_type]
+        
+        model = models[best_models['model_type']]
+        params = best_models['params']
+        deg = best_models['degree']
+            
+        poly = PolynomialFeatures(degree=deg)
+        X_train = poly.fit_transform(train[feat_set].copy())
+        y_train = train[target].copy()
+        X_test = poly.fit_transform(test[feat_set].copy())
+        y_test = test[target].copy()
+
+        feat_import = get_feature_importance(model, params, X_train, y_train,
+                                             X_test, deg)
+        importance.append(feat_import)
+
+    return importances
+
+
+def get_feature_importance(model, params, X_train, y_train, X_test, degree):
+    '''
+    Runs model with parameters and determines feature importance.
+    
+    Inputs:
+        - model: (sklearn Model) Model object to run fit and predict
+        - params: (dict) dictionary of model parameters
+        - train: (Pandas DataFrame) Training data
+        - test: (Pandas DataFrame) Testing data
+        - features: (lst) a list of features used to predict the target
+        - target: (str) the target we are trying to predict
+    Returns:
+        Pandas dataframe of feature coefficients
+    '''   
+    feature_list = ['1']
+    
+    for deg in range(1, degree+1):
+        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
+
+    test_model = model
+    test_model.set_params(**params)
+    test_model.fit(X_train, y_train)
+    test_model.predict(X_test)
+    return pd.DataFrame({'Features': feature_list, 'Coefficients': list(test_model.coef_)}) \
+                .sort_values(by='Coefficients', ascending=False).reset_index(drop=True)
+
+
 ## 2) Compare feature importances
 ## 3) FINALLY, run model and predict on test set
 ## 4) Generate Dummy Test data
