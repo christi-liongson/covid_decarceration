@@ -13,6 +13,8 @@ import clean_data
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn import metrics
+import warnings
+warnings.filterwarnings('ignore')
 
 FEATURES = {'naive': ['lag_prisoner_cases', 'new_prisoner_cases'],
             'population': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup', 
@@ -44,19 +46,6 @@ GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
         'ElasticNet': [{'alpha': x, 'random_state': 0} \
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}  
 
-
-# def determine_features(features, target):
-#     '''
-#     Runs a series of cross validation exercises, selects the best model, 
-#     determines the most important features.
-
-#     Inputs: 
-#         - features: (lst) a list of lists of features to test in the 
-#                      cross-validation
-#         - target: (str) the target variable we are trying to predict
-
-#     '''
-#     pass 
 
 ## Functions we still need: 
 ## 1) Look at features: for each set of features, take the best model from the 
@@ -180,7 +169,7 @@ def time_cv_split(train):
     return train_cv_splits
 
 
-def run_temporal_cv(features=FEATURES, target=TARGET, degrees=DEGREES, 
+def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET, degrees=DEGREES, 
                     models=MODELS, grid=GRID):
     '''
     Splits the data into training and testing sets. Then, further splits the 
@@ -190,6 +179,7 @@ def run_temporal_cv(features=FEATURES, target=TARGET, degrees=DEGREES,
     the best performer across all three metrics. 
 
     Inputs: 
+        - temporal_splits 
         - features: (dict) a list of types of features used to predict the 
                      target
         - target: (str) the target we are trying to predict
@@ -206,19 +196,17 @@ def run_temporal_cv(features=FEATURES, target=TARGET, degrees=DEGREES,
     #best_per_feat = []
     best_models = {}
 
-    train, test = timesplit_data()
-    temporal_splits = time_cv_split(train)
-
-    states = [col for col in train.columns if 'state' in col]
+    states = [col for col in temporal_splits[0]['train'].columns if 
+              'state' in col]
 
     for feat_type, feat_set in features.items(): 
         cv_df = cross_validate(temporal_splits, feat_set + states, target, 
                                DEGREES, MODELS, GRID)
 
-        best_from_feat = find_best_model(cv_results)
+        best_from_feat = find_best_model(cv_df)
         #best_per_feat.append(best_from_feat)
 
-        best_type = best_models.groupby('model').size().to_frame()
+        best_type = best_from_feat.groupby('model').size().to_frame()
         best_type.reset_index(inplace=True, drop=False)
         best_type.rename(columns={0: "count"}, inplace=True)
         best_type.sort_values('count', ascending=False, inplace=True)
