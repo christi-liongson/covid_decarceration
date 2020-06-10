@@ -15,6 +15,18 @@ According to data collected by the New York Times, many of the largest outbreaks
 Can we predict the death rate/rate of infection in the prison population without decarceration? Can we predict recidivism rates, with respect to violent crime, if people are de-carcerated? And what qualitative analysis can we contribute to this urgent conversation?
 
 ## Installation:
+To install required packages, run the following command in your command-line interface:
+
+```
+pip install -r requirements.txt
+```
+
+To view the Jupyter notebooks for data preprocessing and analysis, run the following command in your command-line interface to open Jupyter notebooks in your browser from the main project folder:
+
+```
+cd analysis
+jupyter notebook
+```
 ### Requirements:
 
 ## Usage:
@@ -51,6 +63,32 @@ North Carolina's Department of Public Safety (NCDPS) releases ["all public infor
   - data_3yr.csv: pre-processed output from ```build()``` in build_dataset, where
                   recidivism is defined as reincarceration within three years of
                   release
+
+#### Files (Public Health)
+  - clean_data.py: functions to transform data for machine learning. Functions
+                   include one-hot-encoding and normalizing data. 
+  - prison_conditions_wrangle.py: functions to clean and wrangle data from the UCLA
+                                  COVID in Prisons dataset and the Bureau of Justice Statistics
+  - build_prison_conditions_df.py: functions to build dataframes on prison capacity,
+                                   prison population numbers, COVID-19 related social distancing policies in
+                                   prisons, and mitigation policies to address the adverse effects of isolation
+                                  on prisoners. 
+  - ph_analysis.py: functions to run a series of ML models on the COVID in prisons 
+                    dataset. Functions include temporally splitting the data, running a 
+                    temporal cross validation grid search to tune hyperparameters, training and
+                    testing several models, and selecting and evaluating the best predictors of
+                    COVID-19 cases in prisons. 
+  - prison_data_processing.ipynb: a Jupyter Notebook walking through the process of
+                                  building the COVID in Prisons data set, and running the Machine Learning
+                                  analysis.
+
+#### Data (Public Health)
+ - marshall_covid_cases.csv: covid cases downloaded from the [Marshall Project's COVID Tracker](https://github.com/themarshallproject/COVID_prison_data)
+ - may_19:
+     - ucla_0519_COVID19_related_prison_releases.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906), Tracking number of residents released for prison population reduction efforts			
+     - ucla_0519_jail_prison_condition_policies.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906), Descriptive summaries of ongoing policies affecting carceral conditions
+     - ucla_0519_jail_prison_confirmed_cases_deaths.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906) Tracking viral spread, screening procedures, and testing			
+     -  ucla_0519_visitation_policy_by_state.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906) Tracking visitation suspension policies and offerings of compensatory remote access
 
 ## Team:
 #### Authors
