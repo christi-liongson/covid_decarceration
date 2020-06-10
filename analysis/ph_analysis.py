@@ -1,14 +1,18 @@
 """
 Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma
 
-Module to conduct ML analysis on Public Health in Prisons data. 
+Module to conduct temporal cross valudation and ML predictions and evaluations
+on Public Health in Prisons data. 
 """
 
 import numpy as numpy
 import pandas as pd 
+import datetime
 import build_prison_conditions_df as bpc 
 import clean_data
 from sklearn import linear_model
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn import metrics
 
 FEATURES = {'naive': ['lag_prisoner_cases', 'new_prisoner_cases'],
             'population': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup', 
@@ -28,14 +32,17 @@ TARGET = 'total_prisoner_cases'
 DEGREES = [1, 2, 3]
 
 MODELS = {'LinearRegression': linear_model.LinearRegression(),
-    'Lasso': linear_model.Lasso()
-    'Ridge': linear_model.Ridge()}
+    'Lasso': linear_model.Lasso(),
+    'Ridge': linear_model.Ridge(),
+    'ElasticNet': linear_model.ElasticNet()}
 
-GRID = {'LinearRegression': {'normalize': False, 'fit_intercept': True}
+GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
         'Lasso': [{'alpha': x, 'random_state': 0} \
-                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]
+                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)],
         'Ridge': [{'alpha': x, 'random_state': 0} \
-                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}    
+                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)],
+        'ElasticNet': [{'alpha': x, 'random_state': 0} \
+                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}  
 
 
 # def determine_features(features, target):
@@ -165,7 +172,7 @@ def time_cv_split(train):
     for week in range(earliest + 1, latest):
         cv_train = train.loc[(train['as_of_date'].dt.week <= week) &
                              (train['as_of_date'].dt.week != earliest)].copy()
-        cv_test = train.loc[train['as_of_date'].dt.week = week + 1].copy()       
+        cv_test = train.loc[train['as_of_date'].dt.week == week + 1].copy()       
         train_cv_splits.append({'test_week': week + 1,
                                 'train': cv_train,
                                 'test': cv_test})
@@ -202,9 +209,11 @@ def run_temporal_cv(features=FEATURES, target=TARGET, degrees=DEGREES,
     train, test = timesplit_data()
     temporal_splits = time_cv_split(train)
 
+    states = [col for col in train.columns if 'state' in col]
+
     for feat_type, feat_set in features.items(): 
-        cv_df = cross_validate(temporal_splits, feat_set, target, DEGREES, 
-                               MODELS, GRID)
+        cv_df = cross_validate(temporal_splits, feat_set + states, target, 
+                               DEGREES, MODELS, GRID)
 
         best_from_feat = find_best_model(cv_results)
         #best_per_feat.append(best_from_feat)
@@ -219,8 +228,8 @@ def run_temporal_cv(features=FEATURES, target=TARGET, degrees=DEGREES,
                                                          'degree']]
         best_model = best.iloc[0]
 
-        params = {'degree': int(best_model['degree'])
-                  'params': best_model['parameters']
+        params = {'degree': int(best_model['degree']),
+                  'params': best_model['parameters'],
                   'model_type': best_model['model'].split()[0]}
 
         best_models[feat_type] = params
@@ -270,20 +279,20 @@ def cross_validate(temporal_splits, features, target, degrees, models, grid):
             cv_eval.append(model_perf)
             
     cv_df = pd.concat(cv_eval).astype(dtype={'mse': float, 'mae': float, 
-                                             'rss': float})
+                                             'rss': float, 'degree': int})
     
     cv_df.reset_index(inplace=True)
     cv_df.rename(columns={'index': 'model'}, inplace=True)
     cv_df['model'] = cv_df['model'].str.extract(r"(\w+)\(")[0] + " " + \
-                                    cv_df['degree'] + " " + \
-                                    cv_df["parameters"].astype(str)
+                                    "degree_" + cv_df['degree'].astype(str) + \
+                                    " " + cv_df["parameters"].astype(str)
     
     return cv_df
 
 
 # Build Classifiers: Run a grid search, run a single model
-def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models,
-                    grid):
+def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models, 
+                    grid, verbose=False):
     '''
     Runs a grid search by running multiple instances of a number of classifier
     models using different parameters
@@ -326,13 +335,13 @@ def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models,
 
     model_compare = pd.DataFrame(model_perf).transpose()
     model_compare['test_week'] = test_week
-    model_compare['degree'] = "degree_" + str(degree)
+    model_compare['degree'] = str(degree)
 
     return model_compare 
 
 
-def build_classifier(X_train, y_train, X_test, y_test, model_type, param, 
-                     model_perf):
+def build_classifier(X_train, y_train, X_test, y_test, model_type, 
+                     param, model_perf):
     '''
     Trains a model on a training dataset, predicts values from a testing set. 
     Model must have been imported prior.
@@ -377,10 +386,10 @@ def build_classifier(X_train, y_train, X_test, y_test, model_type, param,
     # Update the metric dictionaries
     eval_metrics["run_time"] = elapsed
     eval_metrics["parameters"] = param
+    eval_metrics["model_type"] = str(model_type)
     model_perf[str(model_type)] = eval_metrics
 
 
-# Evaluate Classifier: calculate the accuracy of a model
 def evaluate_model(y_test, predictions, verbose=True):
     '''
     Produces the evaluation metrics for a model.
