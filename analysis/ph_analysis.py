@@ -55,47 +55,72 @@ GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
 def compare_feat_import(best_models, temporal_splits, features=FEATURES, 
                      target=TARGET, models=MODELS):
     '''
+    Returns all features with coefficients over a given threshold for a model 
+    learned on the largest possible temporal split data to predict the last week
+    in the validation sets. 
+
+    Inputs: 
+        - 
+
+    Returns: 
+        - importances: (lst) a list of small dataframes containing the features
+                        with coefficients over a given threshold, and the
+                        absolute value of those coefficients
     '''
     train = temporal_splits[-1]['train']
     test = temporal_splits[-1]['test']
+    states = [col for col in temporal_splits[0]['train'].columns if 
+              'state' in col]
 
     importances = []
 
     for feat_type in best_models.keys(): 
         feat_set = features[feat_type]
         
-        model = models[best_models['model_type']]
-        params = best_models['params']
-        deg = best_models['degree']
+        model = models[best_models[feat_type]['model_type']]
+        params = best_models[feat_type]['params']
+        deg = best_models[feat_type]['degree']
             
         poly = PolynomialFeatures(degree=deg)
-        X_train = poly.fit_transform(train[feat_set].copy())
+        X_train = poly.fit_transform(train[feat_set + states].copy())
         y_train = train[target].copy()
-        X_test = poly.fit_transform(test[feat_set].copy())
+        X_test = poly.fit_transform(test[feat_set + states].copy())
         y_test = test[target].copy()
 
-        feat_import = get_feature_importance(model, params, X_train, y_train,
-                                             X_test, deg)
-        importance.append(feat_import)
+        feat_import = get_feature_importance(model, params, feat_set + states, 
+                                             X_train, y_train, X_test, deg)
+        importances.append(feat_import)
 
     return importances
 
 
-def get_feature_importance(model, params, X_train, y_train, X_test, degree):
+def get_feature_importance(model, params, features, X_train, y_train, X_test, 
+                           degree):
     '''
     Runs model with parameters and determines feature importance.
     
     Inputs:
         - model: (sklearn Model) Model object to run fit and predict
         - params: (dict) dictionary of model parameters
-        - train: (Pandas DataFrame) Training data
-        - test: (Pandas DataFrame) Testing data
         - features: (lst) a list of features used to predict the target
+        - X_train: (pandas dataframe) a dataframe containing the training set
+                    limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
         - target: (str) the target we are trying to predict
+        - degree: (int) the degree of the polynomial expansion
+
     Returns:
-        Pandas dataframe of feature coefficients
+        - key_importances = (pandas df) pandas dataframe of absolute value of 
+                             feature coefficients, sorted in descending order
+                             of importance
     '''   
     feature_list = ['1']
+    print("params are:", params)
     
     for deg in range(1, degree+1):
         feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
@@ -104,15 +129,15 @@ def get_feature_importance(model, params, X_train, y_train, X_test, degree):
     test_model.set_params(**params)
     test_model.fit(X_train, y_train)
     test_model.predict(X_test)
-    return pd.DataFrame({'Features': feature_list, 'Coefficients': list(test_model.coef_)}) \
-                .sort_values(by='Coefficients', ascending=False).reset_index(drop=True)
+    feat_shrink = pd.DataFrame({'Features': feature_list,
+                                'Coefficients': list(test_model.coef_)})                            
+    feat_shrink['Coefficients'] = feat_shrink['Coefficients'].apply(lambda x: abs(x))
+    feat_shrink = feat_shrink.sort_values(by='Coefficients', ascending=False)
+    feat_shrink.reset_index(drop=True, inplace=True)
+    
+    key_importances = feat_shrink[feat_shrink['Coefficients'] > 0.001].copy()
 
-
-## 2) Compare feature importances
-## 3) FINALLY, run model and predict on test set
-## 4) Generate Dummy Test data
-## 5) Simulate one set of dummy data
-## 6) Run many simulations
+    return key_importances
 
 
 def timesplit_data(): 
@@ -169,8 +194,46 @@ def time_cv_split(train):
     return train_cv_splits
 
 
-def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET, degrees=DEGREES, 
-                    models=MODELS, grid=GRID):
+def predict_and_evaluate(best_models, features=FEATURES, 
+                         model=MODELS, grid=GRID):
+    '''
+    '''
+    train, test = timesplit_data()
+    ## NORMALIZE THE DATA SET
+
+    model_perf = {}
+    ## Use FEATURES to pull out total feature set
+    ## get the states from train columns and add to features set
+
+    model = models[best_models[feat_type]['model_type']]
+    params = best_models[feat_type]['params']
+    deg = best_models[feat_type]['degree']
+
+    ## set up x_Train, y_Train etc
+    ## WILL HAVE TO REMOVE THE FIRST WEEK OF DATA
+    ## feed into Build classifier function with empty model_perf dict
+    ## Return the evaluation of that final prediction
+
+    pass
+    
+
+def simulate(): 
+    '''
+
+    Inputs: 
+        - feat_dict: (dict) a dict where key, value is 'column_name', 'new_value'
+    '''
+    dataset = bpc.prep_df_for_analysis()
+
+    latest_week = dataset["as_of_date"].iloc[-1].week
+
+    test = dataset.loc[dataset["as_of_date"].dt.week == latest_week].copy()
+    ## modify test so has new "as_of_date" column for "next week"
+    ## replace columns using dictionary.
+
+
+def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET, 
+                    degrees=DEGREES, models=MODELS, grid=GRID):
     '''
     Splits the data into training and testing sets. Then, further splits the 
     training set into temporally relevant training and validation sets. Runs
@@ -201,7 +264,7 @@ def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET, degrees=D
 
     for feat_type, feat_set in features.items(): 
         cv_df = cross_validate(temporal_splits, feat_set + states, target, 
-                               DEGREES, MODELS, GRID)
+                               degrees, models, grid)
 
         best_from_feat = find_best_model(cv_df)
         #best_per_feat.append(best_from_feat)
@@ -248,6 +311,7 @@ def cross_validate(temporal_splits, features, target, degrees, models, grid):
                   cross validation: the performance of each model on each time
                   split across a number of metrics            
     '''
+    ## UPDATE TO INCLUDE NORMALIZATION
     cv_eval = []
     
     for cv in temporal_splits:
@@ -442,68 +506,3 @@ def find_best_model(cv_results):
 
     return best_models
 
-def graph_cv_scores(df, vars_and_labels, grouping, title):
-    '''
-    Inputs: 
-        - df: (pandas dataframe) the dataframe of interest
-        - vars_and_labels: (list) the names of the variable (column name in the dataframe) on the y axis
-        - grouping: (str) the columne name to subgroup the data
-        - title: (str) the title for the plot
-        
-    Returns:
-        - nothing: shows plot in place
-    '''
-    fig, axs = plt.subplots(3, 3, sharex="all", figsize=(10, 10))
-    
-    for x in range(0, 3):
-        degree = x + 1
-        degree_df = df[df['degree'] == degree]
-        for y in range(0, 3):
-            sns.lineplot(degree_df["test_week"], degree_df[vars_and_labels[y]], data=degree_df, hue=grouping, ax=axs[x, y])
-            axs[x, y].get_legend().set_visible(False)
-            axs[x, y].set(xlabel="test_week", ylabel=vars_and_labels[y][1])
-            axs[x, y].set_title("Degree: {} | {}".format(str(degree), vars_and_labels[y]))
-
-    lines, labels = fig.axes[-1].get_legend_handles_labels() 
-    
-    fig.legend(lines, labels, loc="center right", bbox_to_anchor=(1.6, 0.5))
-    fig.suptitle(title)
-    plt.show()
-
-def get_feature_importance(model, params, train, test, features, target, degree=1):
-    '''
-    Runs model with parameters and determines feature importance. Returned
-    dataframe displays features where absolute value of coefficients 
-    are greater than 0.0001, features descending by coefficient
-    
-    Inputs:
-        - model: (sklearn Model) Model object to run fit and predict
-        - params: (dict) dictionary of model parameters
-        - train: (Pandas DataFrame) Training data
-        - test: (Pandas DataFrame) Testing data
-        - features: (lst) a list of features used to predict the target
-        - target: (str) the target we are trying to predict
-    Returns:
-        Pandas dataframe of feature coefficients
-    '''
-    
-    poly = PolynomialFeatures(degree=degree)
-    X_train = poly.fit_transform(train[features].copy())
-    y_train = train[target].copy()
-    X_test = poly.fit_transform(test[features].copy())
-    
-    feature_list = ['1']
-    
-    for deg in range(1, degree+1):
-        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
-
-    test_model = best_model
-    test_model.set_params(**best_params)
-    test_model.fit(X_train, y_train)
-    test_model.predict(X_test)
-    feat_shrink = pd.DataFrame({'Features': feature_list,
-                                'Coefficients': list(test_model.coef_)}) \
-                            .sort_values(by='Coefficients',
-                                         ascending=False).reset_index(drop=True)
-    feat_shrink['Coefficients'] = feat_shrink['Coefficients'].apply(lambda x: abs(x))
-    return feat_shrink[feat_shrink['Coefficients'] > 0.0001]

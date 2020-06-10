@@ -36,3 +36,47 @@ def graph_cv_scores(df, vars_and_labels, grouping, title):
     fig.legend(lines, labels, loc="center right", bbox_to_anchor=(1.6, 0.5))
     fig.suptitle(title)
     plt.show()
+    
+
+
+    def plot_single_var_regression(train_df, test_df, feature, target, lin_reg, bounds, normal_params, 
+                               xlab, ylab, axes):
+    '''
+    Plots data from training and testing sets against the line of best fit computed by a a linear regression model. 
+    
+    Inputs: 
+        - train_df: (pandas dataframe) the original (non-normalized) training data
+        - test_df: (pandas dataframe) the original (non-normalized) testing data
+        - features: (str) the single predictor variable
+        - target: (str) the variable we predicted
+        - lin_reg: (LinearRegression) the linear regression model we built
+        - bounds: (tuple) upper and lower bounds for the best fit line to plot
+        - normal_params: (dict) a dictionary with key:value pairings where key is a column name, and the value is a tuple
+                       in the form (mean, std) that we created when normalizing the data
+        - xlab: (str) the label for the x-axis
+        - ylab: (str) the label for the y-axis
+        - axes: (tuple) the upper and lower bounds of the x-axis
+    
+    Returns: 
+        - nothing, shows plot in place
+    '''
+    #plot the non-normalized training data
+    plt.plot(train_df[feature].values, train_df[target].values, '.', color='blue', markersize=10)
+    
+    #plot the non-normalized test data
+    plt.plot(test_df[feature].values, test_df[target].values, '*', color='red', markersize=10)
+    
+    #Best Line Prediction Based on Training Data
+    array = np.arange(bounds[0], bounds[1])
+    array_norm = (array - normal_params[feature][0])/normal_params[feature][1]
+    y_hat = lin_reg.predict(array_norm.reshape(-1, 1))
+    
+    #Plot the Best Line in Red
+    plt.plot(array, y_hat, color='red', alpha=0.4, linewidth=3)
+    
+    # Aesthetics
+    plt.grid(linestyle='--', alpha=0.6)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.xlim(axes)
+    plt.show()
