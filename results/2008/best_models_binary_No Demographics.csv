@@ -3,10 +3,10 @@ classifier,test_accuracy,test_precision,test_recall,test_f1
                    intercept_scaling=1, l1_ratio=None, max_iter=1000,
                    multi_class='auto', n_jobs=None, penalty='none',
                    random_state=1234, solver='lbfgs', tol=0.0001, verbose=0,
-                   warm_start=False)",0.7641006266945197,0.5583109919571045,0.07720826768004449,0.13565670548000977
+                   warm_start=False)",0.7641006266945197,0.664734496576171,0.5289721656445181,0.49953394368126464
 "DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='entropy',
                        max_depth=30, max_features=None, max_leaf_nodes=None,
                        min_impurity_decrease=0.0, min_impurity_split=None,
                        min_samples_leaf=1, min_samples_split=100,
                        min_weight_fraction_leaf=0.0, presort='deprecated',
-                       random_state=1234, splitter='best')",0.7468331925863372,0.42337992376111816,0.15441653536008898,0.2262972018473241
+                       random_state=1234, splitter='best')",0.7468331925863372,0.6006045565278084,0.5440444803726108,0.5374763722064764

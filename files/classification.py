@@ -72,10 +72,11 @@ def run_classifier(train_data,validate_data,test_data,target_type,features_dem):
     columns_best = ['classifier','test_accuracy','test_precision','test_recall','test_f1']
     best_model = pd.DataFrame(columns=columns_best)
 
-    if target_type == "binary":
-        average = 'binary'
-    if target_type == "three_class" or target_type=="all":
-        average = "macro"
+    # if target_type == "binary":
+    #     average = 'binary'
+    # if target_type == "three_class" or target_type=="all":
+    #     average = "macro"
+    average = "macro"
 
     for m in model_keys:
         model = MODELS[m]
@@ -174,8 +175,8 @@ def run_classifier(train_data,validate_data,test_data,target_type,features_dem):
                 'test_f1': f1
                 },ignore_index=True)
         
-        best_model.to_csv('../results/best_models_'+target_type+'_'+features_dem+'.csv', index=False)
-        results.to_csv('../results/results'+target_type+'_'+features_dem+'.csv', index=False)
+        best_model.to_csv('../results/2008/best_models_'+target_type+'_'+features_dem+'.csv', index=False)
+        results.to_csv('../results/2008/results'+target_type+'_'+features_dem+'.csv', index=False)
     
     # End timer
     stop = datetime.datetime.now()
