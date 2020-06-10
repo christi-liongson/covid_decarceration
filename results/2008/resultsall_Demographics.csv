@@ -1,0 +1,23 @@
+classifier,params,rank_test_precision,rank_test_recall,rank_test_accuracy,rank_test_f1,mean_test_accuracy,mean_test_recall,mean_test_precision,mean_test_f1
+"LogisticRegression(C=0.01, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=1000,
+                   multi_class='auto', n_jobs=None, penalty='none',
+                   random_state=1234, solver='lbfgs', tol=0.0001, verbose=0,
+                   warm_start=False)","{'C': 0.01, 'max_iter': 1000, 'penalty': 'none'}",1,1,1,1,0.765359272206667,0.180159437519301,0.20409735386004776,0.1592026932633579
+"LogisticRegression(C=0.01, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=1000,
+                   multi_class='auto', n_jobs=None, penalty='none',
+                   random_state=1234, solver='lbfgs', tol=0.0001, verbose=0,
+                   warm_start=False)","{'C': 0.01, 'max_iter': 1000, 'penalty': 'l2'}",2,2,2,2,0.7646748358487513,0.1777784533261275,0.149859247021911,0.15410294427477708
+"DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='entropy',
+                       max_depth=30, max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=100,
+                       min_weight_fraction_leaf=0.0, presort='deprecated',
+                       random_state=1234, splitter='best')","{'criterion': 'entropy', 'max_depth': 30, 'min_samples_split': 100}",1,2,2,1,0.7496455679604707,0.17642943911373518,0.22395332427274958,0.16303345555230148
+"DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='entropy',
+                       max_depth=30, max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=100,
+                       min_weight_fraction_leaf=0.0, presort='deprecated',
+                       random_state=1234, splitter='best')","{'criterion': 'entropy', 'max_depth': 10, 'min_samples_split': 100}",2,1,1,2,0.7613734665480698,0.17860940111859716,0.188984606801522,0.15709038430517908

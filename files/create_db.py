@@ -6,6 +6,7 @@ import re
 # Code from https://www.sqlitetutorial.net/sqlite-python/create-tables/
 # Don't need to specify primary key https://stackoverflow.com/questions/25954543/sqlite-without-primary-key/25954583
 
+
 def create_connection(db_file):
     """ create a database connection to the SQLite database
         specified by db_file
