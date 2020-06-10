@@ -10,6 +10,7 @@ from populate_db import extract_data, insert_records
 from query_db import query_db
 
 def build_db(conn,TABLES):
+    
     '''
     Calls functions from create_db and populate_db to create ncdoc db, only if the file doesnt already exist
     '''
