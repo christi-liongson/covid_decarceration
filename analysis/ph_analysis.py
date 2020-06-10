@@ -10,6 +10,12 @@ import build_prison_conditions_df as bpc
 import clean_data
 from sklearn import linear_model
 
+FEATURES = {}
+
+TARGET = ""
+
+DEGREES = [1, 2, 3]
+
 MODELS = {'LinearRegression': linear_model.LinearRegression(),
     'Lasso': linear_model.Lasso()
     'Ridge': linear_model.Ridge()}
@@ -19,6 +25,20 @@ GRID = {'LinearRegression': {'normalize': False, 'fit_intercept': True}
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]
         'Ridge': [{'alpha': x, 'random_state': 0} \
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}    
+
+
+def determine_features(features, target):
+    '''
+    Runs a series of cross validation exercises, selects the best model, 
+    determines the most important features.
+
+    Inputs: 
+        - features: (lst) a list of lists of features to test in the 
+                     cross-validation
+        - target: (str) the target variable we are trying to predict
+
+    '''
+    pass 
 
 
 def timesplit_data(): 
@@ -75,7 +95,91 @@ def time_cv_split(train):
     return train_cv_splits
 
 
-def run_temporal_cv(temporal_splits, features, target, models, grid):
+def run_temporal_cv(features, target, degrees=DEGREES, models=MODELS, 
+                    grid=GRID):
+    '''
+    Splits the data into training and testing sets. Then, further splits the 
+    training set into temporally relevant training and validation sets. Runs
+    temporal cross-validation process, produces a dataframe showing which
+    model had the lowest MSE, MAE, and RSS scores, and which model was overall
+    the best performer across all three metrics. 
+
+    Inputs: 
+        - features: (dict) a list of types of features used to predict the 
+                     target
+        - target: (str) the target we are trying to predict
+        - degrees: (lst) the degrees of different polynomial basis expansions
+        - models: (dict) a dictionary containing the models we will be using
+                   to predict the target 
+        - grid: (dict) a dictionary containing the various combinations of 
+                 parameters will be be running for each model 
+
+    Returns: 
+        - best_models: (dict) a dictionary of the best model and its parameters
+                        for every set of features run through the cv process
+    '''
+    #best_per_feat = []
+    best_models = {}
+
+    train, test = timesplit_data()
+    temporal_splits = time_cv_split(train)
+
+    for feat_type, feat_set in features.items(): 
+        cv_df = cross_validate(temporal_splits, feat_set, target, DEGREES, 
+                               MODELS, GRID)
+
+        best_from_feat, best_single = find_best_model(cv_results)
+        #best_per_feat.append(best_from_feat)
+
+        best = cv_df.loc[cv_df['model'] == best_single, ['model', 'parameters',
+                                                         'degree']]
+        best_model = best.iloc[0]
+
+        params = {'degree': int(best_model['degree'])
+                  'params': best_model['parameters']
+                  'model_type': best_model['model'].split()[0]}
+
+        best_models['feat_type'] = params
+
+
+def find_best_model(cv_results): 
+    '''
+    Calculates the average MSE, MAE, and RSS for each model, for each 
+    temporal split. Returns a dataframe where the row represents the 
+    model with the lowest average error of each type. 
+    
+    Inputs: 
+        - cv_results: (pandas df) a dataframe with the results of 
+                       the temporal cross-validation
+    
+    Returns: 
+        - best_models: (pandas df) a dataframe of the best models for 
+                        each accuracy metric. Some models may repeat
+        - best_single: (str) the single best performing model and its params
+    
+    '''    
+    by_model_means = cv_results.groupby('model').mean()
+    by_model_means.reset_index(inplace=True, drop=False)
+    
+    best_mse = by_model_means.loc[by_model_means['mse'] == 
+                                  by_model_means['mse'].min()]
+    best_mae = by_model_means.loc[by_model_means['mae'] == 
+                                  by_model_means['mae'].min()]
+    best_rss = by_model_means.loc[by_model_means['rss'] == 
+                                  by_model_means['rss'].min()]
+    
+    best_models = pd.concat([best_mse, best_mae, best_rss])
+    
+    best_type = best_models.groupby('model').size().to_frame()
+    best_type.reset_index(inplace=True, drop=False)
+    best_type.rename(columns={0: "count"}, inplace=True)
+    best_type.sort_values('count', ascending=False, inplace=True)
+    best_single = best_type.loc[0, 'model']
+    
+    return best_models, best_single
+
+
+def cross_validate(temporal_splits, features, target, degrees, models, grid):
     '''
     Runs a temporal cross validation process. For each temporal split in the
     data, run a grid search to find the best model. 
@@ -87,48 +191,67 @@ def run_temporal_cv(temporal_splits, features, target, models, grid):
                             temporal cv validation set)
         - features: (lst) a list of features used to predict the target
         - target: (str) the target we are trying to predict
+        - degrees: (lst) the degrees of different polynomial basis expansions
         - models: (dict) a dictionary containing the models we will be using
                    to predict the target 
         - grid: (dict) a dictionary containing the various combinations of 
-                 parameters will be be running for each model
- 
+                 parameters will be be running for each model 
+                 
     Returns: 
-        - cv_eval: (pandas df) a dataframe containing the results of the temporal
-                    cross validation: the performance of each model on each time
-                    split across a number of metrics   
+        - cv_df: (pandas df) a dataframe containing the results of the temporal
+                  cross validation: the performance of each model on each time
+                  split across a number of metrics            
     '''
     cv_eval = []
-
+    
     for cv in temporal_splits:
         train = cv['train']
         test = cv['test']
         test_week = cv['test_week']
+        
+        for deg in degrees:
+            poly = PolynomialFeatures(degree=deg)
+            X_train = poly.fit_transform(train[features].copy())
+            y_train = train[target].copy()
+            X_test = poly.fit_transform(test[features].copy())
+            y_test = test[target].copy()
 
-        model_perf = run_grid_search(train, test, test_week, features, target, 
-                                     models, grid)
-        cv_eval.append(model_perf)
-
-    cv_df = pd.concat(cv_eval)
+            model_perf = run_grid_search(X_train, y_train, X_test, y_test, 
+                                         test_week, deg, models, grid)
+            cv_eval.append(model_perf)
+            
+    cv_df = pd.concat(cv_eval).astype(dtype={'mse': float, 'mae': float, 
+                                             'rss': float})
+    
     cv_df.reset_index(inplace=True)
-    cv_df.rename(columns={"index": "model"}, inplace=True)
-
+    cv_df.rename(columns={'index': 'model'}, inplace=True)
+    cv_df['model'] = cv_df['model'].str.extract(r"(\w+)\(")[0] + " " + \
+                                    cv_df['degree'] + " " + \
+                                    cv_df["parameters"].astype(str)
+    
     return cv_df
 
 
 # Build Classifiers: Run a grid search, run a single model
-def run_grid_search(train_df, test_df, test_week, features, target, models, 
+def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models,
                     grid):
     '''
     Runs a grid search by running multiple instances of a number of classifier
     models using different parameters
 
     Inputs:    
-        - train_df: (pandas dataframe) a dataframe containing the training set
-        - test_df: (pandas dataframe) a dataframe containing the testing set
-        - test_week: (int) the week of the year represented in the testing set
-        - features: (lst) a list of column names we are using to predict an
-                     outcome
-        - target: (str) a column name for the outcome we are predicting
+        - X_train: (pandas dataframe) a dataframe containing the training set
+                    limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
+        - test_week: (int) the week of the year represented by the testing
+                      data
+        - degree: (int) the degree for polynomial expansion of the data in the
+                   model
         - models: (dict) a dictionary containing the models we will be using
                    to predict the target 
         - grid: (dict) a dictionary containing the various combinations of 
@@ -146,30 +269,36 @@ def run_grid_search(train_df, test_df, test_week, features, target, models,
 
         # Loop through the parameters
         for param in grid[model_key]: 
-            print("Training model:", model_key, "|", param)
-            build_classifier(train_df, test_df, features, target, model_type, 
+            if verbose: 
+                print("Training model:", model_key, "|", param)
+                
+            build_classifier(X_train, y_train, X_test, y_test, model_type, 
                              param, model_perf)
 
     model_compare = pd.DataFrame(model_perf).transpose()
     model_compare['test_week'] = test_week
+    model_compare['degree'] = "degree_" + str(degree)
 
     return model_compare 
 
 
-def build_classifier(train_df, test_df, features, target, model_type, 
-                     param, model_perf):
+def build_classifier(X_train, y_train, X_test, y_test, model_type, param, 
+                     model_perf):
     '''
     Trains a model on a training dataset, predicts values from a testing set. 
     Model must have been imported prior.
 
     Inputs: 
-        - train_df: (pandas dataframe) a dataframe containing the training set
-        - test_df: (pandas dataframe) a dataframe containing the testing set
-        - features: (lst) a list of column names we are using to predict an
-                     outcome
-        - target: (str) a column name for the outcome we are predicting
+        - X_train: (pandas dataframe) a dataframe containing the training set
+                    limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
         - model_type: (object) an instance of whichever model class we run
-        - params: (dict) a dictionary of parameters to test in the model
+        - params: (dict) a dictionary of parameters to use in the model
         - model_perf: (dict) a dictionary of various measures of accuracy for
                        the model
 
@@ -184,13 +313,13 @@ def build_classifier(train_df, test_df, features, target, model_type,
     model.set_params(**param)
 
     # Fit model on training set 
-    model.fit(train_df[features], train_df[target])
+    model.fit(X_train, y_train)
         
     # Predict on testing set 
-    predictions = model.predict(test_df[features])
+    predictions = model.predict(X_test)
 
     # Evaluate prediction accuracy
-    eval_metrics = evaluate_model(test_df, target, predictions, False)
+    eval_metrics = evaluate_model(y_test, predictions, False)
 
     # End timer
     stop = datetime.datetime.now()
@@ -203,13 +332,13 @@ def build_classifier(train_df, test_df, features, target, model_type,
 
 
 # Evaluate Classifier: calculate the accuracy of a model
-def evaluate_model(test_df, target, predictions, verbose=True):
+def evaluate_model(y_test, predictions, verbose=True):
     '''
     Produces the evaluation metrics for a model.
     
     Inputs: 
-        - test_df: (pandas dataframe) the normalized dataframe of test data
-        - target: (str) the variable we predicted
+        - y_test: (pandas series) a series containing the true values of a 
+                   test set
         - predictions: (LinearRegression) the predicted values from the linear 
                         regression run against the test data target
         - verbose: (boolean) indicator to print metrics, defaults to true
@@ -219,23 +348,19 @@ def evaluate_model(test_df, target, predictions, verbose=True):
     '''
     eval_metrics = {}
     
-    mse = metrics.mean_squared_error(test_df[target], predictions)
-    mae = metrics.mean_absolute_error(test_df[target], predictions)
-    r2 = metrics.r2_score(test_df[target], predictions)
-    rss = ((predictions - test_df[target]) ** 2).sum()
-
+    mse = metrics.mean_squared_error(y_test, predictions)
+    mae = metrics.mean_absolute_error(y_test, predictions)
+    rss = ((predictions - y_test) ** 2).sum()
 
     eval_metrics["mse"] = mse
     eval_metrics["mae"] = mae
-    eval_metrics["r2"] = r2
     eval_metrics["rss"] = rss
     
     if verbose: 
         print("""
               mse:\t{}
               mae:\t{}
-              r2:\t{}
               rss:\t{}
-              """.format(mse, mae, r2, rss))
+              """.format(mse, mae, rss))
     
     return eval_metrics
