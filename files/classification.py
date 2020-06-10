@@ -72,18 +72,11 @@ def run_classifier(train_data,validate_data,test_data,target_type,features_dem):
     columns_best = ['classifier','test_accuracy','test_precision','test_recall','test_f1']
     best_model = pd.DataFrame(columns=columns_best)
 
-<<<<<<< HEAD
-    # if target_type == "binary":
-    #     average = 'binary'
-    # if target_type == "three_class" or target_type=="all":
-    #     average = "macro"
-=======
     #if target_type == "binary":
     #    average = 'binary'
     #if target_type == "three_class" or target_type=="all":
     #    average = "macro"
 
->>>>>>> 154d68e5c8a3fa89ec837d13726a1ae396b12f22
     average = "macro"
 
     for m in model_keys:
