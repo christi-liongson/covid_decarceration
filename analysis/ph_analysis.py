@@ -10,9 +10,20 @@ import build_prison_conditions_df as bpc
 import clean_data
 from sklearn import linear_model
 
-FEATURES = {}
+FEATURES = {'naive': ['lag_prisoner_cases', 'new_prisoner_cases'],
+            'population': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup', 
+                           'lag_prisoner_cases', 'new_prisoner_cases'],
+            'policy': ['no_visits', 'lawyer_access', 'phone_access', 
+                       'video_access', 'no_volunteers', 'limiting_movement', 
+                       'screening', 'healthcare_support', 'lag_prisoner_cases',
+                       'new_prisoner_cases'],
+            'total': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup', 
+                      'no_visits', 'lawyer_access', 'phone_access', 
+                      'video_access', 'no_volunteers', 'limiting_movement', 
+                      'screening', 'healthcare_support', 'lag_prisoner_cases',
+                      'new_prisoner_cases']}
 
-TARGET = ""
+TARGET = 'total_prisoner_cases'
 
 DEGREES = [1, 2, 3]
 
@@ -27,18 +38,28 @@ GRID = {'LinearRegression': {'normalize': False, 'fit_intercept': True}
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}    
 
 
-def determine_features(features, target):
-    '''
-    Runs a series of cross validation exercises, selects the best model, 
-    determines the most important features.
+# def determine_features(features, target):
+#     '''
+#     Runs a series of cross validation exercises, selects the best model, 
+#     determines the most important features.
 
-    Inputs: 
-        - features: (lst) a list of lists of features to test in the 
-                     cross-validation
-        - target: (str) the target variable we are trying to predict
+#     Inputs: 
+#         - features: (lst) a list of lists of features to test in the 
+#                      cross-validation
+#         - target: (str) the target variable we are trying to predict
 
-    '''
-    pass 
+#     '''
+#     pass 
+
+## Functions we still need: 
+## 1) Look at features: for each set of features, take the best model from the 
+##    best_model dictionary, re_run it on the last split with the parameters in 
+##    the dictionary. get the feature importance. 
+## 2) Compare feature importances
+## 3) FINALLY, run model and predict on test set
+## 4) Generate Dummy Test data
+## 5) Simulate one set of dummy data
+## 6) Run many simulations
 
 
 def timesplit_data(): 
@@ -95,8 +116,8 @@ def time_cv_split(train):
     return train_cv_splits
 
 
-def run_temporal_cv(features, target, degrees=DEGREES, models=MODELS, 
-                    grid=GRID):
+def run_temporal_cv(features=FEATURES, target=TARGET, degrees=DEGREES, 
+                    models=MODELS, grid=GRID):
     '''
     Splits the data into training and testing sets. Then, further splits the 
     training set into temporally relevant training and validation sets. Runs
@@ -128,8 +149,14 @@ def run_temporal_cv(features, target, degrees=DEGREES, models=MODELS,
         cv_df = cross_validate(temporal_splits, feat_set, target, DEGREES, 
                                MODELS, GRID)
 
-        best_from_feat, best_single = find_best_model(cv_results)
+        best_from_feat = find_best_model(cv_results)
         #best_per_feat.append(best_from_feat)
+
+        best_type = best_models.groupby('model').size().to_frame()
+        best_type.reset_index(inplace=True, drop=False)
+        best_type.rename(columns={0: "count"}, inplace=True)
+        best_type.sort_values('count', ascending=False, inplace=True)
+        best_single = best_type.loc[0, 'model']
 
         best = cv_df.loc[cv_df['model'] == best_single, ['model', 'parameters',
                                                          'degree']]
@@ -139,44 +166,9 @@ def run_temporal_cv(features, target, degrees=DEGREES, models=MODELS,
                   'params': best_model['parameters']
                   'model_type': best_model['model'].split()[0]}
 
-        best_models['feat_type'] = params
+        best_models[feat_type] = params
 
-
-def find_best_model(cv_results): 
-    '''
-    Calculates the average MSE, MAE, and RSS for each model, for each 
-    temporal split. Returns a dataframe where the row represents the 
-    model with the lowest average error of each type. 
-    
-    Inputs: 
-        - cv_results: (pandas df) a dataframe with the results of 
-                       the temporal cross-validation
-    
-    Returns: 
-        - best_models: (pandas df) a dataframe of the best models for 
-                        each accuracy metric. Some models may repeat
-        - best_single: (str) the single best performing model and its params
-    
-    '''    
-    by_model_means = cv_results.groupby('model').mean()
-    by_model_means.reset_index(inplace=True, drop=False)
-    
-    best_mse = by_model_means.loc[by_model_means['mse'] == 
-                                  by_model_means['mse'].min()]
-    best_mae = by_model_means.loc[by_model_means['mae'] == 
-                                  by_model_means['mae'].min()]
-    best_rss = by_model_means.loc[by_model_means['rss'] == 
-                                  by_model_means['rss'].min()]
-    
-    best_models = pd.concat([best_mse, best_mae, best_rss])
-    
-    best_type = best_models.groupby('model').size().to_frame()
-    best_type.reset_index(inplace=True, drop=False)
-    best_type.rename(columns={0: "count"}, inplace=True)
-    best_type.sort_values('count', ascending=False, inplace=True)
-    best_single = best_type.loc[0, 'model']
-    
-    return best_models, best_single
+    return best_models
 
 
 def cross_validate(temporal_splits, features, target, degrees, models, grid):
@@ -364,3 +356,35 @@ def evaluate_model(y_test, predictions, verbose=True):
               """.format(mse, mae, rss))
     
     return eval_metrics
+
+
+def find_best_model(cv_results): 
+    '''
+    Calculates the average MSE, MAE, and RSS for each model, for each 
+    temporal split. Returns a dataframe where the row represents the 
+    model with the lowest average error of each type. 
+    
+    Inputs: 
+        - cv_results: (pandas df) a dataframe with the results of 
+                       the temporal cross-validation
+    
+    Returns: 
+        - best_models: (pandas df) a dataframe of the best models for 
+                        each accuracy metric. Some models may repeat
+        - best_single: (str) the single best performing model and its params
+    
+    '''    
+    by_model_means = cv_results.groupby('model').mean()
+    by_model_means.reset_index(inplace=True, drop=False)
+    
+    best_mse = by_model_means.loc[by_model_means['mse'] == 
+                                  by_model_means['mse'].min()]
+    best_mae = by_model_means.loc[by_model_means['mae'] == 
+                                  by_model_means['mae'].min()]
+    best_rss = by_model_means.loc[by_model_means['rss'] == 
+                                  by_model_means['rss'].min()]
+    
+    best_models = pd.concat([best_mse, best_mae, best_rss])
+
+    return best_models
+
