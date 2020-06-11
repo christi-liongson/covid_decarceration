@@ -665,7 +665,7 @@ def train_test_validate_active_split(df,holdOut,randomState,config,target,keep_v
     print("Does Validate Represent 20% of the Train+Validate Data?:", len(validate_data.ID.unique())/(len(train_data.ID.unique())+len(validate_data.ID.unique())))
     print("Does Train Represent 80% of the Train+Validate Data?:", len(train_data.ID.unique())/(len(train_data.ID.unique())+len(validate_data.ID.unique())))
 
-    return active_sentences, train_data, validate_data, test_data
+    return active_sentences, train_data, validate_data, test_data, dataset_no_active
 
 def imputation(df,categorical_vars_to_impute,continuous_vars_to_impute):
     # impute categorical vars
@@ -743,7 +743,7 @@ def split_and_process(df,config,target_type,features):
         #print(cat_impute_vars)
         #print(keep_vars)
 
-    active_sentences, train_data, validate_data, test_data = train_test_validate_active_split(df,holdOut,randomState,config,target_type,keep_vars)
+    active_sentences, train_data, validate_data, test_data, dataset_no_active = train_test_validate_active_split(df,holdOut,randomState,config,target_type,keep_vars)
 
     normalize = config.continuous_vars_normalize
 
@@ -757,6 +757,9 @@ def split_and_process(df,config,target_type,features):
     validate_data = imputation(validate_data,cat_impute_vars,cont_impute_vars)
     validate_data = construct_vars_post_impute(validate_data)
 
+    dataset_no_active = imputation(dataset_no_active,cat_impute_vars,cont_impute_vars)
+    dataset_no_active = construct_vars_post_impute(dataset_no_active)
+
     active_sentences = imputation(active_sentences,cat_impute_vars,cont_impute_vars)
     active_sentences = construct_vars_post_impute(active_sentences)
 
@@ -769,10 +772,14 @@ def split_and_process(df,config,target_type,features):
     validate_data = process_features(train_backup,validate_data,one_hot,normalize)
     active_sentences = process_features(train_backup,active_sentences,one_hot,normalize)
 
+    dataset_no_active_norm = process_features(dataset_no_active, dataset_no_active,one_hot,normalize)
+
     # adjust one hot
     train_data, test_data = pl.one_hot_adjust_test(train_data,test_data)
     train_data, validate_data = pl.one_hot_adjust_test(train_data,validate_data)
     train_data, active_sentences = pl.one_hot_adjust_test(train_data,active_sentences)
+
+    train_data, dataset_no_active_norm = pl.one_hot_adjust_test(train_data,dataset_no_active)
 
     # Flag if individual has completed at least 75 percent of sentence
     today = pd.to_datetime('today')
@@ -786,13 +793,14 @@ def split_and_process(df,config,target_type,features):
     test_data.drop(ID_vars,inplace=True,axis=1)
     validate_data.drop(ID_vars,inplace=True,axis=1)
     active_sentences.drop(ID_vars,inplace=True,axis=1)
+    dataset_no_active_norm.drop(ID_vars,inplace=True,axis=1)
 
     active_almost_complete = active_sentences[active_sentences['almost_complete'] == 1]
 
     active_sentences.drop(['sent_total', 'sent_complete', 'almost_complete'],inplace=True, axis=1)
     active_almost_complete.drop(['sent_total', 'sent_complete', 'almost_complete'],inplace=True, axis=1)
 
-    return train_data, test_data, validate_data, active_sentences, active_almost_complete
+    return train_data, test_data, validate_data, active_sentences, active_almost_complete, dataset_no_active_norm
 
 def sanity_check(train_df, test_df):
 
