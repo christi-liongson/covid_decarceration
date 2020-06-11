@@ -43,26 +43,30 @@ North Carolina's Department of Public Safety (NCDPS) releases ["all public infor
              the following modules
     - create_db.py: establishes a connection and creates tables
     - populate_db.py: inserts records into database tables
+  - build_dataset.py: queries tables in database, 
+                      constructs flags and additional features, and outputs a CSV.
+                      Also contains functions to prepare data for and conduct analysis.
+                      Calls the following modules:
     - query_db.py: executes SQL queries on the database
-  - build_dataset.py: queries tables in database, constructs flags and additional
-                      features, outputs a CSV
-  - features_process_analysis.py: prepares data for, and conducts, analysis using
-                                  functions from the following module
     - pipeline.py: contains functions to perform imputation, one-hot encoding, etc.
   - classification.py: runs classification models, outputs precision-recall curves
-                       and the most important features
-  - model_selection.ipynb: finds the best model(s) and returns evaluation metrics
+                       and the most important features. Also contains function to predict 
+                       on active sentences using the best model.
+  - query_and_build.ipynb: calls functions in build_dataset.py to output datasets as CSVs.
+  - models_1994.ipynb and models_2008.ipynb: finds the best model(s) and returns evaluation metrics
+                      for data trimmed starting at 1994 and data starting at 2008 respectively
+  - predict_active.ipynb: applies all of our models on all of our datasets (1994 and 2008, different
+                      target outcomes).
+  
 
 #### Data (Public Safety)
   - coding_offenses.xls: categorizes offense labels from the NCDPS based on extent of
                          harm on a scale from 1 to 5, where 1 is the least likely and
                          5 is most likely
-  - data_1yr.csv: pre-processed output from ```build()``` in build_dataset, where
-                  recidivism is defined as reincarceration within one year of
-                  release
-  - data_3yr.csv: pre-processed output from ```build()``` in build_dataset, where
+  - dataset_main_active3.csv: pre-processed output from ```build_all()``` in build_dataset, where
                   recidivism is defined as reincarceration within three years of
-                  release
+                  release. Files is too large to be pushed to github, but can be recreated using
+                  the information above
 
 #### Files (Public Health)
   - clean_data.py: functions to transform data for machine learning. Functions
