@@ -186,7 +186,7 @@ def run_classifier(train_data,validate_data,test_data,target_type,features_dem):
     return results,best_model
 
 
-def predict_using_best(classifier, file_path, full_train_df, active_sentences, active_almost_complete, year):
+def predict_using_best(classifier, file_path, full_train_df, active_sentences, active_almost_complete,target_type, year):
     '''
     Inputs:
         - classifier (str): DecisionTreeClassifier or LogisticRegression
@@ -226,17 +226,39 @@ def predict_using_best(classifier, file_path, full_train_df, active_sentences, a
 
     # Train model
     print("Training...", best_model)
-    best_model.fit(df.loc[:,full_train_df.columns!=target], full_train_df[target])
+    best_model.fit(full_train_df.loc[:,full_train_df.columns!=target], full_train_df[target])
 
     print("Predicting...")
     predict_active = best_model.predict(active_sentences.loc[:,active_sentences.columns!=target])
     predict_almost_complete = best_model.predict(active_almost_complete.loc[:,active_almost_complete.columns!=target])
 
+    print("Number of active sentences for", str(year), ":", active_sentences.shape[0])
+    print("Number of active sentences for", str(year), ":", active_almost_complete.shape[0])
+
     # Print probabilities
-    active_prob = predict_active.sum() / len (predict_active)
-    almost_complete_prob = predict_almost_complete.sum() / len(predict_almost_complete)
+    if target_type == "binary":
+        active_prob = predict_active.sum() / len (predict_active)
+        almost_complete_prob = predict_almost_complete.sum() / len(predict_almost_complete)
 
-    print("Likelihood of recidivism (all active sentences) for", str(year), ":", active_prob)
-    print("Likelihood of recidivism (almost complete active sentences) for", str(year), ":", almost_complete_prob)
+        print("Likelihood of recidivism (all active sentences) for", str(year), ":", active_prob)
+        print("Likelihood of recidivism (almost complete active sentences) for", str(year), ":", almost_complete_prob)
 
-    return active_prob, almost_complete_prob
+    if target_type == "three_class" or "all":
+        predict_active_df = pd.DataFrame(predict_active)
+        predict_active_df = predict_active_df.rename(columns={0:'group'})
+        active_prob = predict_active_df.groupby('group').size().reset_index(name="count")
+        active_prob['pct'] = active_prob['count'] / predict_active_df.shape[0]
+        
+        predict_active_almost_complete_df = pd.DataFrame(predict_almost_complete)
+        predict_active_almost_complete_df = predict_active_almost_complete_df.rename(columns={0:'group'})
+        almost_complete_prob = predict_active_almost_complete_df.groupby('group').size().reset_index(name="count")
+        almost_complete_prob['pct'] = almost_complete_prob['count'] / predict_active_almost_complete_df.shape[0]
+
+        print("Likelihood of recidivism (all active sentences) for", str(year), ":")
+        print(active_prob)
+        print("\n")
+        print("Likelihood of recidivism (almost complete active sentences) for", str(year), ":")
+        print(almost_complete_prob)
+
+
+    return active_prob, almost_complete_prob 

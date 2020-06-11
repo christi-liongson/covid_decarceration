@@ -526,12 +526,12 @@ def get_unemployment(df):
 
     return df
 
-def trim_data(df):
+def trim_data(df,year):
     # Trim data to start in 1976 to match unemployment data
     #df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1976]
 
     # Trim data to start in 1995 to match Fair Sentencing Act
-    df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 1994]
+    df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= year]
 
     # Trim data to start in 2008 to match peak of mass incarceration
     #df = df[df['EARLIEST_SENTENCE_EFFECTIVE_DT'].dt.year >= 2008]
@@ -572,11 +572,11 @@ def add_time_fixed_effects(df):
 
     return df
 
-def construct_features_before_split(df):
+def construct_features_before_split(df,year):
 
     df = get_age(df)
     df = get_unemployment(df)
-    df = trim_data(df)
+    df = trim_data(df,year)
     df = recode_most_serious_offense(df)
     df = get_total_sent_count(df)
     df = add_time_fixed_effects(df)
@@ -722,8 +722,8 @@ def process_features(train_data,df,categorical_vars_one_hot,continuous_vars_norm
 #def adjust_one_hot():
 
 #
-def split_and_process(df,config,target_type,features):
-    df = construct_features_before_split(df)
+def split_and_process(df,config,target_type,features,year):
+    df = construct_features_before_split(df,year)
     holdOut = config.holdOut
     randomState = config.randomState
     ID_vars = config.ID_vars
