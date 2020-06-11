@@ -120,7 +120,7 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
                              of importance
     '''   
     feature_list = ['1']
-    print("params are:", params)
+    # print("params are:", params)
     
     for deg in range(1, degree+1):
         feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
@@ -318,6 +318,8 @@ def cross_validate(temporal_splits, features, target, degrees, models, grid):
         train = cv['train']
         test = cv['test']
         test_week = cv['test_week']
+
+        
         
         for deg in degrees:
             poly = PolynomialFeatures(degree=deg)
