@@ -184,3 +184,59 @@ def run_classifier(train_data,validate_data,test_data,target_type,features_dem):
     print("Time Elapsed:", stop - start)
 
     return results,best_model
+
+
+def predict_using_best(classifier, file_path, full_train_df, active_sentences, active_almost_complete, year):
+    '''
+    Inputs:
+        - classifier (str): DecisionTreeClassifier or LogisticRegression
+        - file_path (str): path to CSV with stored grid search results
+        - df (pandas DataFrame): dataset_3
+        - target_type (str): "binary", "three class", or "all"
+        - features_dem (str): "Demographics" or "No Demographics"
+        - year (int): 1994 or 2008
+
+    Returns: tuple of recidivism probabilities for actve and almost complete sentences
+    '''
+    best_models = pd.read_csv(file_path)
+    model_to_predict = best_models[best_models['classifier'].str.contains(classifier)]['classifier'].values[0]
+    params_string = model_to_predict[len(classifier + '('):-1]
+
+    # Clean up the parameters string
+    split_params = params_string.replace('=', ':')
+    split_params = split_params.replace('\n', '')
+    clean_split = [param.strip() for param in split_params[1:-1].split(', ')]
+    dict_params = {param.split(":")[0]: param.split(":")[1] for param in clean_split}
+
+    if classifier == 'DecisionTreeClassifier':
+
+        keys = ['criterion', 'max_depth', 'min_samples_split']
+        best_params = {key: dict_params[key] for key in keys}
+
+        best_params['criterion'] = best_params['criterion'][1:-1]
+        best_params['max_depth'] = int(best_params['max_depth'])
+        best_params['min_samples_split'] = int(best_params['min_samples_split'])
+
+        best_model = DecisionTreeClassifier(criterion=best_params['criterion'],
+                                    max_depth=best_params['max_depth'],
+                                    min_samples_split=best_params['min_samples_split'],
+                                    random_state=config.randomState)
+
+    target = config.target_vars[0]
+
+    # Train model
+    print("Training...", best_model)
+    best_model.fit(df.loc[:,full_train_df.columns!=target], full_train_df[target])
+
+    print("Predicting...")
+    predict_active = best_model.predict(active_sentences.loc[:,active_sentences.columns!=target])
+    predict_almost_complete = best_model.predict(active_almost_complete.loc[:,active_almost_complete.columns!=target])
+
+    # Print probabilities
+    active_prob = predict_active.sum() / len (predict_active)
+    almost_complete_prob = predict_almost_complete.sum() / len(predict_almost_complete)
+
+    print("Likelihood of recidivism (all active sentences) for", str(year), ":", active_prob)
+    print("Likelihood of recidivism (almost complete active sentences) for", str(year), ":", almost_complete_prob)
+
+    return active_prob, almost_complete_prob
