@@ -53,10 +53,8 @@ def compare_feat_import(best_models, temporal_splits, features=FEATURES,
     Returns all features with coefficients over a given threshold for a model 
     learned on the largest possible temporal split data to predict the last week
     in the validation sets. 
-
     Inputs: 
         - 
-
     Returns: 
         - importances: (lst) a list of small dataframes containing the features
                         with coefficients over a given threshold, and the
@@ -114,11 +112,15 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
                              feature coefficients, sorted in descending order
                              of importance
     '''   
-    feature_list = ['1']
+    
     # print("params are:", params)
     
-    for deg in range(1, degree+1):
-        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
+    if degree > 1:
+        feature_list = ['1']
+        for deg in range(1, degree+1):
+            feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
+    else:
+        feature_list = features
 
     test_model = model
     test_model.set_params(**params)
@@ -188,14 +190,18 @@ def time_cv_split(train):
 
     return train_cv_splits
 
+def normalize_prep_eval_data(train, test, feat_type, features=FEATURES, 
+                             target=TARGET):
+    '''
+    Normalizes data and drops earliest week from training set.
 
-def predict_and_evaluate(best_models, features=FEATURES, 
-                         model=MODELS, grid=GRID):
+    Inputs:
+        - train (Pandas DataFrame): Training data
+        - test (Pandas DataFrame): Testing data
+    Ouputs:
+        X_train, y_train, X_test, y_test dataframes
     '''
-    '''
-    train, test = timesplit_data()
     norm_features = features['population']
-
 
     train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
     test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
@@ -206,23 +212,78 @@ def predict_and_evaluate(best_models, features=FEATURES,
     train = train.merge(train_norm, left_index=True, right_index=True)
     test = test.drop(columns=norm_features)
     test = test.merge(test_norm, left_index=True, right_index=True)
+    
+    # Drop first week
+    earliest = train["as_of_date"].iloc[0].week
+    train = train[train['as_of_date'].dt.week != earliest]
 
-    model_perf = {}
-    ## Use FEATURES to pull out total feature set
-    ## get the states from train columns and add to features set
-    # states = [col for col in train.columns if 'state' in col]
-    features['States'] = [col for col in train.columns if 'state' in col]
+    states = [col for col in train.columns if 'state' in col]
+    # feat_type.append("as_of_date")
+    feature_set = features[feat_type] + states
+    feature_set.append('as_of_date')
 
-    model = models[best_models[feat_type]['model_type']]
-    params = best_models[feat_type]['params']
-    deg = best_models[feat_type]['degree']
+    X_train = train.loc[:, feature_set].copy()
+    y_train = train[target].copy()
+    X_test = test.loc[:, feature_set].copy()
+    y_test = test[target].copy()
 
-    ## set up x_Train, y_Train etc
-    ## WILL HAVE TO REMOVE THE FIRST WEEK OF DATA
-    ## feed into Build classifier function with empty model_perf dict
-    ## Return the evaluation of that final prediction
+    return X_train, y_train, X_test, y_test
 
-    pass
+
+
+
+# def predict_and_evaluate(best_models, feat_type, features=FEATURES, target=TARGET,
+#                          model=MODELS, grid=GRID):
+#     '''
+#     '''
+#     train, test = timesplit_data()
+#     norm_features = features['population']
+
+#     train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
+#     test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
+
+#     # Merge normalized features with the train and test dataframe
+#     train = train.drop(columns=norm_features)
+#     # print(train.columns)
+#     train = train.merge(train_norm, left_index=True, right_index=True)
+#     test = test.drop(columns=norm_features)
+#     test = test.merge(test_norm, left_index=True, right_index=True)
+
+#     model_perf = {}
+#     ## Use FEATURES to pull out total feature set
+#     ## get the states from train columns and add to features set
+#     # states = [col for col in train.columns if 'state' in col]
+#     features['States'] = [col for col in train.columns if 'state' in col]
+
+#     # Drop first week
+#     earliest = train["as_of_date"].iloc[0].week
+#     train = train[train['as_of_date'].dt.week != earliest]
+
+#     # train.loc[(train['as_of_date'].dt.week <= week) &
+#     #                          (train['as_of_date'].dt.week != earliest)].copy()
+#     print(model)
+#     print(best)
+#     model = model[best_models[feat_type]['model_type']]
+#     params = best_models[feat_type]['params']
+#     # deg = best_models[feat_type]['degree']
+
+#     ## set up x_Train, y_Train etc
+#     X_train = train.loc[:, features['feat_type']].copy()
+#     y_train = train[target].copy()
+#     X_test = test.loc[:, features['feat_type']].copy()
+#     y_test = test[target.copy()]
+
+#     # ## WILL HAVE TO REMOVE THE FIRST WEEK OF DATA
+#     # earliest = train["as_of_date"].iloc[0].week
+
+
+#     ## feed into Build classifier function with empty model_perf dict
+#     build_classifier(X_train, y_train, X_test, y_test, model, params,
+#                      model_perf)
+
+#     ## Return the evaluation of that final prediction
+#     return model_perf
+
     
 
 def simulate(): 
@@ -276,8 +337,10 @@ def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET,
 
         best_from_feat = find_best_model(cv_df)
         #best_per_feat.append(best_from_feat)
+        # print(best_from_feat)
 
         best_type = best_from_feat.groupby('model').size().to_frame()
+        # print(best_type)
         best_type.reset_index(inplace=True, drop=False)
         best_type.rename(columns={0: "count"}, inplace=True)
         best_type.sort_values('count', ascending=False, inplace=True)
