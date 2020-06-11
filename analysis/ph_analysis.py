@@ -200,6 +200,25 @@ def predict_and_evaluate(best_models, features=FEATURES,
     '''
     train, test = timesplit_data()
     ## NORMALIZE THE DATA SET
+    norm_features = FEATURES['population']
+    
+    for cv in temporal_splits:
+        train = cv['train']
+        test = cv['test']
+        test_week = cv['test_week']
+        
+        # print(norm_features)
+
+        train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
+        test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
+
+        # Merge normalized features with the train and test dataframe
+        train = train.drop(columns=norm_features)
+        # print(train.columns)
+        train = train.merge(train_norm, left_index=True, right_index=True)
+        test = test.drop(columns=norm_features)
+        test = test.merge(test_norm, left_index=True, right_index=True)
+    
 
     model_perf = {}
     ## Use FEATURES to pull out total feature set
@@ -288,7 +307,8 @@ def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET,
     return best_models
 
 
-def cross_validate(temporal_splits, features, target, degrees, models, grid):
+def cross_validate(temporal_splits, features, target,
+                   degrees, models, grid):
     '''
     Runs a temporal cross validation process. For each temporal split in the
     data, run a grid search to find the best model. 
@@ -311,7 +331,8 @@ def cross_validate(temporal_splits, features, target, degrees, models, grid):
                   cross validation: the performance of each model on each time
                   split across a number of metrics            
     '''
-    ## UPDATE TO INCLUDE NORMALIZATION
+
+    norm_features = FEATURES['population']
     cv_eval = []
     
     for cv in temporal_splits:
@@ -319,7 +340,15 @@ def cross_validate(temporal_splits, features, target, degrees, models, grid):
         test = cv['test']
         test_week = cv['test_week']
 
-        
+        train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
+        test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
+
+        # Merge normalized features with the train and test dataframe
+        train = train.drop(columns=norm_features)
+        train = train.merge(train_norm, left_index=True, right_index=True)
+        test = test.drop(columns=norm_features)
+        test = test.merge(test_norm, left_index=True, right_index=True)
+
         
         for deg in degrees:
             poly = PolynomialFeatures(degree=deg)

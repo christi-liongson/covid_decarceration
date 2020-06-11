@@ -137,9 +137,11 @@ def plot_feature_importance(feature_importances, feature_sets):
         - Displays graph
     '''
     num_plots = len(feature_sets)
-    fig, axes = plt.subplots(1, num_plots, sharey='all', figsize=(15,5))
+    fig, axes = plt.subplots(1, num_plots, figsize=(15,5))
     
     for i in range (0, num_plots):
+        if i > 0:
+            axes[i].yaxis.label.set_visible(False)
         sns.barplot(x='Features', y='Coefficients',
                     data=feature_importances[i][:10], ax=axes[i])
         axes[i].set_xticklabels(axes[i].get_xticklabels(),
