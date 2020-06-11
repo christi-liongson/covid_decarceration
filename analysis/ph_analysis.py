@@ -47,11 +47,6 @@ GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}  
 
 
-## Functions we still need: 
-## 1) Look at features: for each set of features, take the best model from the 
-##    best_model dictionary, re_run it on the last split with the parameters in 
-##    the dictionary. get the feature importance.
-
 def compare_feat_import(best_models, temporal_splits, features=FEATURES, 
                      target=TARGET, models=MODELS):
     '''
@@ -199,30 +194,24 @@ def predict_and_evaluate(best_models, features=FEATURES,
     '''
     '''
     train, test = timesplit_data()
-    ## NORMALIZE THE DATA SET
-    norm_features = FEATURES['population']
-    
-    for cv in temporal_splits:
-        train = cv['train']
-        test = cv['test']
-        test_week = cv['test_week']
-        
-        # print(norm_features)
+    norm_features = features['population']
 
-        train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
-        test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
 
-        # Merge normalized features with the train and test dataframe
-        train = train.drop(columns=norm_features)
-        # print(train.columns)
-        train = train.merge(train_norm, left_index=True, right_index=True)
-        test = test.drop(columns=norm_features)
-        test = test.merge(test_norm, left_index=True, right_index=True)
-    
+    train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
+    test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
+
+    # Merge normalized features with the train and test dataframe
+    train = train.drop(columns=norm_features)
+    # print(train.columns)
+    train = train.merge(train_norm, left_index=True, right_index=True)
+    test = test.drop(columns=norm_features)
+    test = test.merge(test_norm, left_index=True, right_index=True)
 
     model_perf = {}
     ## Use FEATURES to pull out total feature set
     ## get the states from train columns and add to features set
+    # states = [col for col in train.columns if 'state' in col]
+    features['States'] = [col for col in train.columns if 'state' in col]
 
     model = models[best_models[feat_type]['model_type']]
     params = best_models[feat_type]['params']
