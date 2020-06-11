@@ -191,7 +191,7 @@ def time_cv_split(train):
     return train_cv_splits
 
 def normalize_prep_eval_data(train, test, feat_type, features=FEATURES, 
-                             target=TARGET):
+                             target=TARGET, include_date=False):
     '''
     Normalizes data and drops earliest week from training set.
 
@@ -208,7 +208,6 @@ def normalize_prep_eval_data(train, test, feat_type, features=FEATURES,
 
     # Merge normalized features with the train and test dataframe
     train = train.drop(columns=norm_features)
-    # print(train.columns)
     train = train.merge(train_norm, left_index=True, right_index=True)
     test = test.drop(columns=norm_features)
     test = test.merge(test_norm, left_index=True, right_index=True)
@@ -218,9 +217,10 @@ def normalize_prep_eval_data(train, test, feat_type, features=FEATURES,
     train = train[train['as_of_date'].dt.week != earliest]
 
     states = [col for col in train.columns if 'state' in col]
-    # feat_type.append("as_of_date")
     feature_set = features[feat_type] + states
-    feature_set.append('as_of_date')
+    
+    if include_date:
+        feature_set.append('as_of_date')
 
     X_train = train.loc[:, feature_set].copy()
     y_train = train[target].copy()
@@ -230,61 +230,33 @@ def normalize_prep_eval_data(train, test, feat_type, features=FEATURES,
     return X_train, y_train, X_test, y_test
 
 
+def predict_and_evaluate(train, test, feat_type, best_model, features=FEATURES, target=TARGET):
+    '''
+    Trains and predicts best model selected through cross validation and
+    evaluates accuracty metrics.
+
+    Inputs:
+        - train (Pandas DataFrame): training dataset
+        - test (Pandas DataFrame): testing dataset
+        - feat_type (str): feature set
+        - best_model (dict): dictionary of best performing models of each
+            feature type
+    Outputs: Pandas DataFrame of evaluation metrics
+    '''
+
+    model_perf = {}
+    X_train, y_train, X_test, y_test = normalize_prep_eval_data(train, test, 
+                                                                    feat_type)
+    model_type = MODELS[best_model[feat_type]['model_type']]
+
+    best_params = best_model[feat_type]['params']
+
+    build_classifier(X_train, y_train, X_test, y_test, model_type, 
+                     best_params, model_perf)
+
+    return pd.DataFrame(model_perf.values())
 
 
-# def predict_and_evaluate(best_models, feat_type, features=FEATURES, target=TARGET,
-#                          model=MODELS, grid=GRID):
-#     '''
-#     '''
-#     train, test = timesplit_data()
-#     norm_features = features['population']
-
-#     train_norm, scaler = clean_data.normalize(train.loc[:, norm_features])
-#     test_norm, _ = clean_data.normalize(test.loc[:, norm_features], scaler)
-
-#     # Merge normalized features with the train and test dataframe
-#     train = train.drop(columns=norm_features)
-#     # print(train.columns)
-#     train = train.merge(train_norm, left_index=True, right_index=True)
-#     test = test.drop(columns=norm_features)
-#     test = test.merge(test_norm, left_index=True, right_index=True)
-
-#     model_perf = {}
-#     ## Use FEATURES to pull out total feature set
-#     ## get the states from train columns and add to features set
-#     # states = [col for col in train.columns if 'state' in col]
-#     features['States'] = [col for col in train.columns if 'state' in col]
-
-#     # Drop first week
-#     earliest = train["as_of_date"].iloc[0].week
-#     train = train[train['as_of_date'].dt.week != earliest]
-
-#     # train.loc[(train['as_of_date'].dt.week <= week) &
-#     #                          (train['as_of_date'].dt.week != earliest)].copy()
-#     print(model)
-#     print(best)
-#     model = model[best_models[feat_type]['model_type']]
-#     params = best_models[feat_type]['params']
-#     # deg = best_models[feat_type]['degree']
-
-#     ## set up x_Train, y_Train etc
-#     X_train = train.loc[:, features['feat_type']].copy()
-#     y_train = train[target].copy()
-#     X_test = test.loc[:, features['feat_type']].copy()
-#     y_test = test[target.copy()]
-
-#     # ## WILL HAVE TO REMOVE THE FIRST WEEK OF DATA
-#     # earliest = train["as_of_date"].iloc[0].week
-
-
-#     ## feed into Build classifier function with empty model_perf dict
-#     build_classifier(X_train, y_train, X_test, y_test, model, params,
-#                      model_perf)
-
-#     ## Return the evaluation of that final prediction
-#     return model_perf
-
-    
 
 def simulate(dataset, feat_dict, features, model, target=TARGET): 
     '''
@@ -303,11 +275,10 @@ def simulate(dataset, feat_dict, features, model, target=TARGET):
     test = dataset.loc[dataset["as_of_date"].dt.week == latest_week].copy()
     test["as_of_date"] = test["as_of_date"].apply(lambda x: x.week + 1)
     ## replace columns using dictionary.
-    # print(test)
+
     for col, val in feat_dict.items():
         test[col] = val
     
-    # print(test)
     print(dataset[target])
     model.fit(dataset.loc[:, features].values, dataset[target])
     predictions = model.predict(test.loc[:, features].values)
