@@ -1,0 +1,12 @@
+classifier,test_accuracy,test_precision,test_recall,test_f1
+"LogisticRegression(C=0.01, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=1000,
+                   multi_class='auto', n_jobs=None, penalty='none',
+                   random_state=1234, solver='lbfgs', tol=0.0001, verbose=0,
+                   warm_start=False)",0.8659051513400595,0.5913852365854295,0.33547434687026834,0.3143438714010158
+"DecisionTreeClassifier(ccp_alpha=0.0, class_weight=None, criterion='entropy',
+                       max_depth=30, max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=100,
+                       min_weight_fraction_leaf=0.0, presort='deprecated',
+                       random_state=1234, splitter='best')",0.8550157784790435,0.3747161151896264,0.34053001484162454,0.3298976881433949
