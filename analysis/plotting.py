@@ -124,9 +124,9 @@ def make_time_plot(df, vars_and_labels, grouping, title):
     fig.suptitle(title)
     plt.show()
 
-def plot_feature_importance(feature_importances, feature_sets):
+def plot_comp_feature_importance(feature_importances, feature_sets):
     '''
-    Plots feature importance in a bar chart. Displays ten features with highest
+    Plots multiple feature importance in a bar chart. Displays ten features with highest
     model coefficients. 
     
     Inputs:
@@ -148,6 +148,33 @@ def plot_feature_importance(feature_importances, feature_sets):
                                 rotation=45, ha='right')
         axes[i].set_title(feature_sets[i])
 
+def plot_feature_importance(feature_importance):
+    '''
+    The first plot will display the top ten features. The second plot
+    will display the top non-state features.
+    
+    Inputs:
+        feature_importance (Pandas Dataframe): dataframe of model's feature
+            importance.
+    '''
+    no_states = [x for x in feature_importance['Features'].unique() \
+                 if "state" not in x]
+    no_states_feat = feature_importance.set_index('Features') \
+                                        .loc[no_states].reset_index()
+    
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    sns.barplot(x='Features', y='Coefficients', data=feature_importance,
+                ax=axes[0])
+    axes[0].set_title('Top Features')
+    sns.barplot(x='Features', y='Coefficients', data=no_states_feat, ax=axes[1])
+    axes[1].set_title('Top Features: No States')
+
+    for i in range(2):
+        axes[i].set_xticklabels(axes[i].get_xticklabels(),
+                                rotation=45, ha='right')
+
+    
+
 def plot_simulation(dataset, predictions):
     '''
     '''
@@ -156,3 +183,32 @@ def plot_simulation(dataset, predictions):
     plt.xlabel('Date')
     plt.ylabel('Cases')
     plt.show()
+
+def plot_predicted_data(X_train, y_train, X_test, y_test, predictions):
+    '''
+    Plots training, true test, and predicted test data in a single plot.
+
+    Inputs:
+        - X_train: (pandas dataframe) a dataframe containing the training set
+            limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
+        - predictions: (array) Predicted test target values from trained model
+    Outputs:
+        - Displays graph
+    '''
+    
+    plt.plot(X_train['as_of_date'], y_train, '.', color='blue', markersize=12)
+    # Test data is in red
+    plt.plot(X_test['as_of_date'], y_test, '*', color='red', markersize=10 )
+    # Predicted model in green
+    plt.plot(X_test['as_of_date'], predictions,'o', color='green', alpha=0.4,
+             markersize=5)
+    plt.xlabel('Date')
+    plt.ylabel('Cases')
+    plt.xticks(rotation=45)
+

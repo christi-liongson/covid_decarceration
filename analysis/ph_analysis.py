@@ -14,6 +14,7 @@ from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn import metrics
 import warnings
+import plotting
 warnings.filterwarnings('ignore')
 
 FEATURES = {'naive': ['lag_prisoner_cases', 'new_prisoner_cases'],
@@ -78,17 +79,17 @@ def compare_feat_import(best_models, temporal_splits, features=FEATURES,
         X_train = poly.fit_transform(train[feat_set + states].copy())
         y_train = train[target].copy()
         X_test = poly.fit_transform(test[feat_set + states].copy())
-        y_test = test[target].copy()
+        # y_test = test[target].copy()
 
         feat_import = get_feature_importance(model, params, feat_set + states, 
-                                             X_train, y_train, X_test, deg)
+                                             X_train, y_train, X_test, degree=deg)
         importances.append(feat_import)
 
     return importances
 
 
 def get_feature_importance(model, params, features, X_train, y_train, X_test, 
-                           degree):
+                           degree=None):
     '''
     Runs model with parameters and determines feature importance.
     
@@ -115,8 +116,11 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
     
     # print("params are:", params)
     
-    # if degree > 1:
-    feature_list = ['1']
+    if degree:
+        feature_list = ['1']
+    else:
+        feature_list = []
+        degree = 1
     for deg in range(1, degree+1):
         feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
     # else:
@@ -126,6 +130,7 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
     test_model.set_params(**params)
     test_model.fit(X_train, y_train)
     test_model.predict(X_test)
+
     feat_shrink = pd.DataFrame({'Features': feature_list,
                                 'Coefficients': list(test_model.coef_)})                            
     feat_shrink['Coefficients'] = feat_shrink['Coefficients'].apply(lambda x: abs(x))
@@ -230,7 +235,8 @@ def normalize_prep_eval_data(train, test, feat_type, features=FEATURES,
     return X_train, y_train, X_test, y_test
 
 
-def predict_and_evaluate(train, test, feat_type, best_model, features=FEATURES, target=TARGET):
+def predict_and_evaluate(train, test, feat_type, best_model, features=FEATURES,
+                         target=TARGET, drop_features=False):
     '''
     Trains and predicts best model selected through cross validation and
     evaluates accuracty metrics.
@@ -246,19 +252,26 @@ def predict_and_evaluate(train, test, feat_type, best_model, features=FEATURES, 
 
     model_perf = {}
     X_train, y_train, X_test, y_test = normalize_prep_eval_data(train, test, 
-                                                                    feat_type)
+                                                                feat_type,
+                                                                include_date=True)
+    if drop_features:
+        X_train = X_train.drop(columns=drop_features)
+        X_test = X_test.drop(columns=drop_features)
+
     model_type = MODELS[best_model[feat_type]['model_type']]
 
     best_params = best_model[feat_type]['params']
 
-    build_classifier(X_train, y_train, X_test, y_test, model_type, 
-                     best_params, model_perf)
+    predictions = build_classifier(X_train, y_train, X_test, y_test, model_type, 
+                                   best_params, model_perf, ret_predictions=True)
+    
+    plotting.plot_predicted_data(X_train, y_train,  X_test, y_test, predictions)
 
     return pd.DataFrame(model_perf.values())
 
 
 
-def simulate(dataset, feat_dict, features, model, target=TARGET): 
+def simulate(dataset, feat_dict, feat_type, best_model, target=TARGET): 
     '''
 
     Inputs: 
@@ -276,16 +289,36 @@ def simulate(dataset, feat_dict, features, model, target=TARGET):
     test["as_of_date"] = test["as_of_date"].apply(lambda x: x.week + 1)
     ## replace columns using dictionary.
 
+    # print(test.loc[:, ['lag_prisoner_cases', 'total_prisoner_cases', 'new_prisoner_cases']])
+
+    # Assumes that total_cases will increase by new_prisoner_cases.
+    test['lag_prisoner_cases'] = test['total_prisoner_cases']
+    test['total_prisoner_cases'] = test['total_prisoner_cases'] + test['new_prisoner_cases']
+
+    # print(test.loc[:, ['lag_prisoner_cases', 'total_prisoner_cases', 'new_prisoner_cases']])
+    # print(test)
+
     for col, val in feat_dict.items():
         test[col] = val
+    # print(test.head())
     
-    print(dataset[target])
-    model.fit(dataset.loc[:, features].values, dataset[target])
-    predictions = model.predict(test.loc[:, features].values)
-    print(predictions)
+    X_train, y_train, X_test, y_test = normalize_prep_eval_data(dataset, test,
+                                                                 feat_type,
+                                                                 include_date=True)
+    
+    # print(X_train.columns)
+    # print(dataset[target])
+    model_type = MODELS[best_model[feat_type]['model_type']]
+
+    best_params = best_model[feat_type]['params']
+
+
+    predictions = fit_and_predict(X_train, y_train, X_test, y_test, model_type, best_params)
+    # model.fit(dataset.loc[:, features].values, dataset[target])
+    # predictions = model.predict(test.loc[:, features].values)
+    # print(predictions)
     return pd.concat([test['as_of_date'].reset_index(drop=True),
                      pd.DataFrame(predictions)], axis=1)
-
 
 
 
@@ -463,9 +496,42 @@ def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models,
 
     return model_compare 
 
+def fit_and_predict(X_train, y_train, X_test, y_test, model_type, param):
+    '''
+    Fits and predicts model.
+
+    Inputs:
+        - X_train: (pandas dataframe) a dataframe containing the training set
+                    limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
+        - model_type: (object) an instance of whichever model class we run
+        - params: (dict) a dictionary of parameters to use in the model
+    
+    Outputs:
+        Array of predicted values
+    '''
+    if 'as_of_date' in X_train.columns:
+        X_train = X_train.drop(columns='as_of_date')
+        X_test = X_test.drop(columns='as_of_date')
+
+    model = model_type 
+    model.set_params(**param)
+
+    # Fit model on training set 
+    model.fit(X_train, y_train)
+        
+    # Predict on testing set 
+    return model.predict(X_test)
+
+
 
 def build_classifier(X_train, y_train, X_test, y_test, model_type, 
-                     param, model_perf):
+                     param, model_perf, ret_predictions=False):
     '''
     Trains a model on a training dataset, predicts values from a testing set. 
     Model must have been imported prior.
@@ -491,14 +557,15 @@ def build_classifier(X_train, y_train, X_test, y_test, model_type,
     start = datetime.datetime.now()
 
     # Build Model 
-    model = model_type 
-    model.set_params(**param)
+    # model = model_type 
+    # model.set_params(**param)
 
-    # Fit model on training set 
-    model.fit(X_train, y_train)
+    # # Fit model on training set 
+    # model.fit(X_train, y_train)
         
     # Predict on testing set 
-    predictions = model.predict(X_test)
+    predictions = fit_and_predict(X_train, y_train, X_test, y_test, model_type,
+                                  param)
 
     # Evaluate prediction accuracy
     eval_metrics = evaluate_model(y_test, predictions, False)
@@ -512,6 +579,9 @@ def build_classifier(X_train, y_train, X_test, y_test, model_type,
     eval_metrics["parameters"] = param
     eval_metrics["model_type"] = str(model_type)
     model_perf[str(model_type)] = eval_metrics
+
+    if ret_predictions:
+        return predictions
 
 
 def evaluate_model(y_test, predictions, verbose=True):
