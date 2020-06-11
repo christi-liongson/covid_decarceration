@@ -115,12 +115,12 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
     
     # print("params are:", params)
     
-    if degree > 1:
-        feature_list = ['1']
-        for deg in range(1, degree+1):
-            feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
-    else:
-        feature_list = features
+    # if degree > 1:
+    feature_list = ['1']
+    for deg in range(1, degree+1):
+        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
+    # else:
+    #     feature_list = features
 
     test_model = model
     test_model.set_params(**params)
@@ -286,19 +286,37 @@ def normalize_prep_eval_data(train, test, feat_type, features=FEATURES,
 
     
 
-def simulate(): 
+def simulate(dataset, feat_dict, features, model, target=TARGET): 
     '''
 
     Inputs: 
         - feat_dict: (dict) a dict where key, value is 'column_name', 'new_value'
+            An empty dictionary would not transform the data
+        - model - model already fitted to training dataset
     '''
-    dataset = bpc.prep_df_for_analysis()
-
+    # dataset = bpc.prep_df_for_analysis()
+    # Drop first week
+    earliest = dataset["as_of_date"].iloc[0].week
+    dataset = dataset[dataset['as_of_date'].dt.week != earliest]
     latest_week = dataset["as_of_date"].iloc[-1].week
 
     test = dataset.loc[dataset["as_of_date"].dt.week == latest_week].copy()
-    ## modify test so has new "as_of_date" column for "next week"
+    test["as_of_date"] = test["as_of_date"].apply(lambda x: x.week + 1)
     ## replace columns using dictionary.
+    # print(test)
+    for col, val in feat_dict.items():
+        test[col] = val
+    
+    # print(test)
+    print(dataset[target])
+    model.fit(dataset.loc[:, features].values, dataset[target])
+    predictions = model.predict(test.loc[:, features].values)
+    print(predictions)
+    return pd.concat([test['as_of_date'].reset_index(drop=True),
+                     pd.DataFrame(predictions)], axis=1)
+
+
+
 
 
 def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET, 

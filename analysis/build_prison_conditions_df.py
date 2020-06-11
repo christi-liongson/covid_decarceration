@@ -97,7 +97,7 @@ def merge_covid_cases():
     marshall = clean_data.import_csv(MARSHALL, marshall_dtypes)
 
     marshall['as_of_date'] = pd.to_datetime(marshall['as_of_date'],
-                                            format='%Y-%m-%d')
+                                            format='%m/%d/%Y')
     marshall['lower_name'] = marshall['name'].str.lower()
 
     marshall.sort_values(by='as_of_date', inplace=True)

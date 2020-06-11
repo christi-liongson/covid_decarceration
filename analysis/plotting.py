@@ -147,3 +147,12 @@ def plot_feature_importance(feature_importances, feature_sets):
         axes[i].set_xticklabels(axes[i].get_xticklabels(),
                                 rotation=45, ha='right')
         axes[i].set_title(feature_sets[i])
+
+def plot_simulation(dataset, predictions):
+    '''
+    '''
+    plt.plot(dataset['as_of_date'].dt.week, dataset['total_prisoner_cases'], '.', color='blue', markersize=12)
+    plt.plot(predictions['as_of_date'], predictions[0],'o', color='green', alpha=0.4, markersize=5)
+    plt.xlabel('Date')
+    plt.ylabel('Cases')
+    plt.show()
