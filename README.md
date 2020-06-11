@@ -32,8 +32,11 @@ jupyter notebook
 ## Usage:
 
 ## Directory:
-  - data:
-  - files:
+ Additional information on files in each subfolder are listed below by policy area.
+  - data: Raw and processed data (Public Safety and Public Health)
+  - exploratory_analysis: Exploratory analysis on data (Public Safety and Public Health)
+  - files: Database configuration and analysis (Public Safety)
+  - analysis: Data cleaning, preprocessing, and analysis (Public Health)
 
 North Carolina's Department of Public Safety (NCDPS) releases ["all public information on all NC Department of Public Safety offenders convicted since 1972."](http://webapps6.doc.state.nc.us/opi/downloads.do?method=view) Before running the following modules or notebooks, download all tables and store them as CSVs. (Note: this will require around 5 GB of storage). Run ```./ncdoc_parallel.sh``` to store the data in the ```preprocessed/``` directory. For more information, see [ncdoc_data](https://github.com/jtwalsh0/ncdoc_data) project by jtwalsh0.
 
@@ -68,7 +71,7 @@ North Carolina's Department of Public Safety (NCDPS) releases ["all public infor
                   release. Files is too large to be pushed to github, but can be recreated using
                   the information above
 
-#### Files (Public Health)
+#### Analysis (Public Health)
   - clean_data.py: functions to transform data for machine learning. Functions
                    include one-hot-encoding and normalizing data. 
   - prison_conditions_wrangle.py: functions to clean and wrangle data from the UCLA
