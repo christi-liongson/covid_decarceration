@@ -41,62 +41,62 @@ jupyter notebook
 North Carolina's Department of Public Safety (NCDPS) releases ["all public information on all NC Department of Public Safety offenders convicted since 1972."](http://webapps6.doc.state.nc.us/opi/downloads.do?method=view) Before running the following modules or notebooks, download all tables and store them as CSVs. (Note: this will require around 5 GB of storage). Run ```./ncdoc_parallel.sh``` to store the data in the ```preprocessed/``` directory. For more information, see [ncdoc_data](https://github.com/jtwalsh0/ncdoc_data) project by jtwalsh0.
 
 #### Files (Public Safety)
-  - config.py: contains CSV locations and constants e.g., seed, CSV names, etc.
-  - main.py: builds, populates, and queries a SQLite3 database by calling
+  - **config.py**: contains CSV locations and constants e.g., seed, CSV names, etc.
+  - **main.py**: builds, populates, and queries a SQLite3 database by calling
              the following modules
-    - create_db.py: establishes a connection and creates tables
-    - populate_db.py: inserts records into database tables
-  - build_dataset.py: queries tables in database, 
-                      constructs flags and additional features, and outputs a CSV.
-                      Also contains functions to prepare data for and conduct analysis.
-                      Calls the following modules:
-    - query_db.py: executes SQL queries on the database
-    - pipeline.py: contains functions to perform imputation, one-hot encoding, etc.
-  - classification.py: runs classification models, outputs precision-recall curves
+    - *create_db.py*: establishes a connection and creates tables
+    - *populate_db.py*: inserts records into database tables
+  - **build_dataset.py**: queries tables in database, 
+                          constructs flags and additional features, and outputs a CSV.
+                          Also contains functions to prepare data for and conduct analysis.
+                          Calls the following modules:
+    - *query_db.py*: executes SQL queries on the database
+    - *pipeline.py*: contains functions to perform imputation, one-hot encoding, etc.
+  - **classification.py**: runs classification models, outputs precision-recall curves
                        and the most important features. Also contains function to predict 
                        on active sentences using the best model.
-  - query_and_build.ipynb: calls functions in build_dataset.py to output datasets as CSVs.
-  - models_1994.ipynb and models_2008.ipynb: finds the best model(s) and returns evaluation metrics
-                      for data trimmed starting at 1994 and data starting at 2008 respectively
-  - predict_active.ipynb: applies all of our models on all of our datasets (1994 and 2008, different
-                      target outcomes).
+  - **query_and_build.ipynb**: calls functions in build_dataset.py to output datasets as CSVs.
+  - **models_1994.ipynb** and **models_2008.ipynb**: finds the best model(s) and returns evaluation metrics
+                                                     for data trimmed starting at 1994 and data starting at 2008 respectively
+  - **predict_active.ipynb**: applies all of our models on all of our datasets (1994 and 2008, different
+                              target outcomes).
   
 
 #### Data (Public Safety)
-  - coding_offenses.xls: categorizes offense labels from the NCDPS based on extent of
+  - **coding_offenses.xls**: categorizes offense labels from the NCDPS based on extent of
                          harm on a scale from 1 to 5, where 1 is the least likely and
                          5 is most likely
-  - dataset_main_active3.csv: pre-processed output from ```build_all()``` in build_dataset, where
+  - **dataset_main_active3.csv**: pre-processed output from ```build_all()``` in build_dataset, where
                   recidivism is defined as reincarceration within three years of
                   release. Files is too large to be pushed to github, but can be recreated using
                   the information above
 
 #### Analysis (Public Health)
-  - clean_data.py: functions to transform data for machine learning. Functions
+  - **clean_data.py**: functions to transform data for machine learning. Functions
                    include one-hot-encoding and normalizing data. 
-  - prison_conditions_wrangle.py: functions to clean and wrangle data from the UCLA
+  - **prison_conditions_wrangle.py**: functions to clean and wrangle data from the UCLA
                                   COVID in Prisons dataset and the Bureau of Justice Statistics
-  - build_prison_conditions_df.py: functions to build dataframes on prison capacity,
+  - **build_prison_conditions_df.py**: functions to build dataframes on prison capacity,
                                    prison population numbers, COVID-19 related social distancing policies in
                                    prisons, and mitigation policies to address the adverse effects of isolation
                                   on prisoners. 
-  - ph_analysis.py: functions to run a series of ML models on the COVID in prisons 
+  - **ph_analysis.py**: functions to run a series of ML models on the COVID in prisons 
                     dataset. Functions include temporally splitting the data, running a 
                     temporal cross validation grid search to tune hyperparameters, training and
                     testing several models, and selecting and evaluating the best predictors of
                     COVID-19 cases in prisons. 
-  - prison_data_processing.ipynb: a Jupyter Notebook walking through the process of
+  - **prison_data_processing.ipynb**: a Jupyter Notebook walking through the process of
                                   building the COVID in Prisons data set, and running the Machine Learning
                                   analysis.
-  - ph_plotting.py: functions to plot related public health data and cross-validation
+  - **ph_plotting.py**: functions to plot related public health data and cross-validation
 
 #### Data (Public Health)
- - marshall_covid_cases.csv: covid cases downloaded from the [Marshall Project's COVID Tracker](https://github.com/themarshallproject/COVID_prison_data)
- - may_19:
-     - ucla_0519_COVID19_related_prison_releases.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906), Tracking number of residents released for prison population reduction efforts			
-     - ucla_0519_jail_prison_condition_policies.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906), Descriptive summaries of ongoing policies affecting carceral conditions
-     - ucla_0519_jail_prison_confirmed_cases_deaths.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906) Tracking viral spread, screening procedures, and testing			
-     -  ucla_0519_visitation_policy_by_state.csv: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906) Tracking visitation suspension policies and offerings of compensatory remote access
+ - **marshall_covid_cases.csv**: covid cases downloaded from the [Marshall Project's COVID Tracker](https://github.com/themarshallproject/COVID_prison_data)
+ - **may_19**:
+     - *ucla_0519_COVID19_related_prison_releases.csv*: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906), Tracking number of residents released for prison population reduction efforts			
+     - *ucla_0519_jail_prison_condition_policies.csv*: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906), Descriptive summaries of ongoing policies affecting carceral conditions
+     - *ucla_0519_jail_prison_confirmed_cases_deaths.csv*: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906) Tracking viral spread, screening procedures, and testing			
+     -  *ucla_0519_visitation_policy_by_state.csv*: From the [UCLA Law COVID-19 Behind Bars Data Project](https://docs.google.com/spreadsheets/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906) Tracking visitation suspension policies and offerings of compensatory remote access
 
 ## Team:
 #### Authors
