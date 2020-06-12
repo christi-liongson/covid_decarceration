@@ -55,7 +55,9 @@ def compare_feat_import(best_models, temporal_splits, features=FEATURES,
     learned on the largest possible temporal split data to predict the last week
     in the validation sets. 
     Inputs: 
-        - 
+        -  best_models: (dict)  A dictionary of best models from cross-validation
+        - temporal_splits (lst): List of dictionaries of 
+                                 temporally split Pandas dataframes
     Returns: 
         - importances: (lst) a list of small dataframes containing the features
                         with coefficients over a given threshold, and the
@@ -79,10 +81,10 @@ def compare_feat_import(best_models, temporal_splits, features=FEATURES,
         X_train = poly.fit_transform(train[feat_set + states].copy())
         y_train = train[target].copy()
         X_test = poly.fit_transform(test[feat_set + states].copy())
-        # y_test = test[target].copy()
 
         feat_import = get_feature_importance(model, params, feat_set + states, 
-                                             X_train, y_train, X_test, degree=deg)
+                                             X_train, y_train, X_test,
+                                             degree=deg)
         importances.append(feat_import)
 
     return importances
@@ -105,7 +107,6 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
                    limited to the predictive features
         - y_test: (pandas series) a series with the true values of the
                    target in the testing set
-        - target: (str) the target we are trying to predict
         - degree: (int) the degree of the polynomial expansion
 
     Returns:
@@ -114,8 +115,6 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
                              of importance
     '''   
     
-    # print("params are:", params)
-    
     if degree:
         feature_list = ['1']
     else:
@@ -123,8 +122,6 @@ def get_feature_importance(model, params, features, X_train, y_train, X_test,
         degree = 1
     for deg in range(1, degree+1):
         feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
-    # else:
-    #     feature_list = features
 
     test_model = model
     test_model.set_params(**params)
@@ -203,6 +200,7 @@ def normalize_prep_eval_data(train, test, feat_type, features=FEATURES,
     Inputs:
         - train (Pandas DataFrame): Training data
         - test (Pandas DataFrame): Testing data
+        - feat_type (str): string of feature set
     Ouputs:
         X_train, y_train, X_test, y_test dataframes
     '''
@@ -275,11 +273,14 @@ def simulate(dataset, feat_dict, feat_type, best_model, target=TARGET):
     '''
 
     Inputs: 
-        - feat_dict: (dict) a dict where key, value is 'column_name', 'new_value'
+        - dataset (Pandas DataFrame): Full dataset
+        - feat_dict (dict): a dict where key, value is 'column_name', 'new_value'
             An empty dictionary would not transform the data
-        - model - model already fitted to training dataset
+        - best_model (dict): dictionary of best_models from cross-validation
+    Outputs:
+        - Pandas Dataframe of predictions
     '''
-    # dataset = bpc.prep_df_for_analysis()
+
     # Drop first week
     earliest = dataset["as_of_date"].iloc[0].week
     dataset = dataset[dataset['as_of_date'].dt.week != earliest]
@@ -287,16 +288,14 @@ def simulate(dataset, feat_dict, feat_type, best_model, target=TARGET):
 
     test = dataset.loc[dataset["as_of_date"].dt.week == latest_week].copy()
     test["as_of_date"] = test["as_of_date"].apply(lambda x: x.week + 1)
-    ## replace columns using dictionary.
 
-    # print(test.loc[:, ['lag_prisoner_cases', 'total_prisoner_cases', 'new_prisoner_cases']])
 
     # Assumes that total_cases will increase by new_prisoner_cases.
     test['lag_prisoner_cases'] = test['total_prisoner_cases']
-    test['total_prisoner_cases'] = test['total_prisoner_cases'] + test['new_prisoner_cases']
+    test['total_prisoner_cases'] = test['total_prisoner_cases'] + \
+                                   test['new_prisoner_cases']
 
-    # print(test.loc[:, ['lag_prisoner_cases', 'total_prisoner_cases', 'new_prisoner_cases']])
-    # print(test)
+    # Updates features in test based on feat_dict
 
     for col, val in feat_dict.items():
         test[col] = val
@@ -305,22 +304,15 @@ def simulate(dataset, feat_dict, feat_type, best_model, target=TARGET):
     X_train, y_train, X_test, y_test = normalize_prep_eval_data(dataset, test,
                                                                  feat_type,
                                                                  include_date=True)
-    
-    # print(X_train.columns)
-    # print(dataset[target])
     model_type = MODELS[best_model[feat_type]['model_type']]
 
     best_params = best_model[feat_type]['params']
 
 
-    predictions = fit_and_predict(X_train, y_train, X_test, y_test, model_type, best_params)
-    # model.fit(dataset.loc[:, features].values, dataset[target])
-    # predictions = model.predict(test.loc[:, features].values)
-    # print(predictions)
+    predictions = fit_and_predict(X_train, y_train, X_test, y_test,
+                                  model_type, best_params)
     return pd.concat([test['as_of_date'].reset_index(drop=True),
                      pd.DataFrame(predictions)], axis=1)
-
-
 
 
 def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET, 
@@ -333,21 +325,14 @@ def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET,
     the best performer across all three metrics. 
 
     Inputs: 
-        - temporal_splits 
-        - features: (dict) a list of types of features used to predict the 
-                     target
-        - target: (str) the target we are trying to predict
-        - degrees: (lst) the degrees of different polynomial basis expansions
-        - models: (dict) a dictionary containing the models we will be using
-                   to predict the target 
-        - grid: (dict) a dictionary containing the various combinations of 
-                 parameters will be be running for each model 
+        - temporal_splits (list) - list of dictionaries of Pandas Dataframes
+                                   of temporally split data
 
     Returns: 
         - best_models: (dict) a dictionary of the best model and its parameters
                         for every set of features run through the cv process
     '''
-    #best_per_feat = []
+
     best_models = {}
 
     states = [col for col in temporal_splits[0]['train'].columns if 
@@ -358,11 +343,8 @@ def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET,
                                degrees, models, grid)
 
         best_from_feat = find_best_model(cv_df)
-        #best_per_feat.append(best_from_feat)
-        # print(best_from_feat)
 
         best_type = best_from_feat.groupby('model').size().to_frame()
-        # print(best_type)
         best_type.reset_index(inplace=True, drop=False)
         best_type.rename(columns={0: "count"}, inplace=True)
         best_type.sort_values('count', ascending=False, inplace=True)
@@ -515,7 +497,7 @@ def fit_and_predict(X_train, y_train, X_test, y_test, model_type, param):
     Outputs:
         Array of predicted values
     '''
-    if 'as_of_date' in X_train.columns:
+    if isinstance(X_train, pd.DataFrame) and 'as_of_date' in X_train.columns:
         X_train = X_train.drop(columns='as_of_date')
         X_test = X_test.drop(columns='as_of_date')
 

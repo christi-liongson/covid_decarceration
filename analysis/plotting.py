@@ -175,14 +175,14 @@ def plot_feature_importance(feature_importance):
 
     
 
-def plot_simulation(dataset, predictions):
+def plot_simulation(dataset, predictions, title):
     '''
     '''
     plt.plot(dataset['as_of_date'].dt.week, dataset['total_prisoner_cases'], '.', color='blue', markersize=12)
     plt.plot(predictions['as_of_date'], predictions[0],'o', color='green', alpha=0.4, markersize=5)
     plt.xlabel('Date')
     plt.ylabel('Cases')
-    plt.show()
+    plt.title(title)
 
 def plot_predicted_data(X_train, y_train, X_test, y_test, predictions):
     '''
