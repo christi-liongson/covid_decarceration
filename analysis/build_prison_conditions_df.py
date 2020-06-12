@@ -4,7 +4,7 @@ Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma
 Module to build a dataframe containing the prison capacity and conditions by
 state.
 '''
-import numpy as np
+
 import pandas as pd
 import chardet
 import prison_conditions_wrangle as pcw
@@ -22,22 +22,22 @@ def prep_df_for_analysis():
     Takes the final dataframe of COVID-19 cases, prison capacity/population, and
     social distancing policies, and tranforms for analysis: creates dummy
     variables for each state and calculates new cases over time. Finally, order
-    the data by time to prepare for temporal splitting. 
+    the data by time to prepare for temporal splitting.
 
-    Inputs: 
+    Inputs:
         - none: (the functions called use default arguments)
 
-    Returns: 
+    Returns:
         - df: (pandas df) pandas dataframe with COVID-19 cases, prison
                capacity/population, and social distancing policies, transformed
                for analysis
     '''
     df = merge_covid_cases()
-    
+
     df = df.drop(columns=[col for col in df.columns if 'test' in col])
     df.sort_values(by=['state', 'as_of_date'], inplace=True)
 
-    new_cols = {"new_staff_cases": "total_staff_cases", 
+    new_cols = {"new_staff_cases": "total_staff_cases",
                 "new_prisoner_cases": "total_prisoner_cases",
                 "new_staff_deaths": "total_staff_deaths",
                 "new_prisoner_deaths": "total_prisoner_deaths",
@@ -51,11 +51,11 @@ def prep_df_for_analysis():
         df[new_col] = df[new_col].astype('Int64')
         for state in df['state'].unique():
             state_filter = df['state'] == state
-            if "new" in new_col: 
-                df.loc[state_filter, new_col] = df.loc[state_filter, 
+            if "new" in new_col:
+                df.loc[state_filter, new_col] = df.loc[state_filter,
                                                        cum_tot].diff()
             else:
-                df.loc[state_filter, new_col] = df.loc[state_filter, 
+                df.loc[state_filter, new_col] = df.loc[state_filter,
                                                        cum_tot].shift()
 
     df = clean_data.one_hot_encode(df, ["state"])
@@ -64,7 +64,7 @@ def prep_df_for_analysis():
     df = df.dropna(subset=["as_of_date"])
     #get the index to start at 0, again
     df.index = range(len(df))
-    
+
     return df
 
 
@@ -72,12 +72,12 @@ def merge_covid_cases():
     '''
     Imports Marshall Project data on covid-cases.
     Merges prison conditions with state-level data on COVID-19 cases.
-    
+
     Inputs:
         - none: (the functions called use default arguments)
 
     Returns:
-        - df: (pandas df) pandas dataFrame of COVID-19 reported cases, prison 
+        - df: (pandas df) pandas dataFrame of COVID-19 reported cases, prison
                policies, and population information.
     '''
     demographics = ['state', 'pop_2020', 'pop_2018', 'capacity', 'pct_occup']
@@ -86,11 +86,11 @@ def merge_covid_cases():
                 'healthcare_support']
 
     marshall_dtypes = {'name': str,
-                    'total_staff_cases': 'Int64',
-                    'total_prisoner_cases': 'Int64',
-                    'total_staff_deaths': 'Int64',
-                    'total_prisoner_deaths': 'Int64',
-                    'as_of_date': str}
+                       'total_staff_cases': 'Int64',
+                       'total_prisoner_cases': 'Int64',
+                       'total_staff_deaths': 'Int64',
+                       'total_prisoner_deaths': 'Int64',
+                       'as_of_date': str}
 
     prison_conditions = build_prison_conditions_df()
 
@@ -207,7 +207,8 @@ def build_policies_df(filepath=POLICIES):
                   "compensatory_remote_access_(phone)",
                   "compensatory_remote_access_(video)"]
     new_cols = ["no_visits", "lawyer_access", "phone_access", "video_access"]
-    text_col = "additional_notes_(related_activity_suspensions,_explanation_of_compensatory_access,_waivers,_etc.)"
+    text_col = "additional_notes_(related_activity_suspensions," + \
+               "_explanation_of_compensatory_access,_waivers,_etc.)"
 
     policies = policies.dropna(subset=str_cols)
     policies = pcw.clean_str_cols(policies, str_cols)
@@ -254,7 +255,7 @@ def build_capacity_df(filepath=CAPACITY):
                                                 "capacity", "pct_occup"])
     return capacity_df
 
-if __name__ ==  "__main__":
+if __name__ == "__main__":
     logging.info('''Generating final dataframe of COVID-19 cases prison
                     capacity/population, and social distancing policies
                     for analysis.''')
