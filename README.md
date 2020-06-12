@@ -27,9 +27,6 @@ To view the Jupyter notebooks for data preprocessing and analysis, run the follo
 cd analysis
 jupyter notebook
 ```
-### Requirements:
-
-## Usage:
 
 ## Directory:
  Additional information on files in each subfolder are listed below by policy area.
