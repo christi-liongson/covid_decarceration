@@ -42,7 +42,7 @@ def graph_cv_scores(df, vars_and_labels, grouping, title):
 
     lines, labels = fig.axes[-1].get_legend_handles_labels()
 
-    fig.legend(lines, labels, loc="center left", bbox_to_anchor=(1.3, 0.5))
+    fig.legend(lines, labels, loc="center left", bbox_to_anchor=(1.0, 0.5))
     fig.suptitle(title)
     plt.show()
 
@@ -174,13 +174,29 @@ def plot_feature_importance(feature_importance):
         axes[i].set_xticklabels(axes[i].get_xticklabels(),
                                 rotation=45, ha='right')
 
+def plot_simulation(dataset, predictions):
+    '''
+    Plots a single simulation.
+
+    Inputs:
+        - dataset (Pandas DataFrame): Full dataset
+        - predictions (Pandas Series) - predictions from simulation
+    '''
+    plt.plot(dataset['as_of_date'].dt.week, dataset['total_prisoner_cases'],
+              '.', color='blue', markersize=12)
+    plt.plot(predictions['as_of_date'], predictions[0],'o', color='red',
+             alpha=0.4, markersize=5)
+    plt.xlabel('Date')
+    plt.ylabel('Cases')
+    plt.title('No Changes')
+
 
 def plot_simulations(dataset, policies, feat_set, best_models):
     '''
     Plots simulations in a 2x2 graph.
 
     Inputs:
-        - Dataset (Pandas DataFrame): Full dataset
+        - dataset (Pandas DataFrame): Full dataset
         - policies (list): list of dictionaries of simulation policies
         - feat_set (str): name of feature set
         - best_models (dict): Dictionary of accuracy scores of each best model
@@ -197,8 +213,9 @@ def plot_simulations(dataset, policies, feat_set, best_models):
                             y=dataset['total_prisoner_cases'], color='blue',
                             ax=axes[x, y])
             sns.scatterplot(x=sim['as_of_date'], y=sim[0],
-                            color='green', ax=axes[x, y])
+                            color='red', ax=axes[x, y])
             axes[x, y].set_title(policies[i]['title'])
+            axes[x, y].set_ylabel('Total Infected Cases')
 
             i += 1
 
