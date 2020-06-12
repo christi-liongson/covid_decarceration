@@ -7,7 +7,6 @@ turn any COVID-19 related social distancing measures into a series of dummy
 variables at the state level.
 '''
 import re
-import numpy as np
 import pandas as pd
 
 POLICIES_KEYWORDS = {"no_volunteers": ["volunteer"],
