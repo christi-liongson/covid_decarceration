@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from pandas.plotting import register_matplotlib_converters
+import ph_analysis as pha
 register_matplotlib_converters()
 
 def graph_cv_scores(df, vars_and_labels, grouping, title):
@@ -183,6 +184,26 @@ def plot_simulation(dataset, predictions, title):
     plt.xlabel('Date')
     plt.ylabel('Cases')
     plt.title(title)
+
+
+def plot_simulations(dataset, policies, feat_set, best_models):
+    '''
+    '''
+
+    fig, axes = plt.subplots(2, 2, sharex="all", sharey="all", figsize=(20, 10))
+
+    i = 0
+    for x in range(0, 2):
+        for y in range(0, 2):
+            sim = pha.simulate(dataset, policies[i]['policies'], feat_set, best_models)
+            sns.scatterplot(x=dataset['as_of_date'].dt.week, 
+                            y=dataset['total_prisoner_cases'], color='blue',
+                            ax=axes[x, y])
+            sns.scatterplot(x=sim['as_of_date'], y=sim[0],
+                            color='green', ax=axes[x, y])
+            axes[x, y].set_title(policies[i]['title'])
+
+            i += 1
 
 def plot_predicted_data(X_train, y_train, X_test, y_test, predictions):
     '''

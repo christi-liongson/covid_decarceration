@@ -2,13 +2,13 @@
 Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma
 
 Module to conduct temporal cross valudation and ML predictions and evaluations
-on Public Health in Prisons data. 
+on Public Health in Prisons data.
 """
 
 import numpy as numpy
-import pandas as pd 
+import pandas as pd
 import datetime
-import build_prison_conditions_df as bpc 
+import build_prison_conditions_df as bpc
 import clean_data
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
@@ -18,14 +18,14 @@ import plotting
 warnings.filterwarnings('ignore')
 
 FEATURES = {'naive': ['lag_prisoner_cases', 'new_prisoner_cases'],
-            'population': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup', 
+            'population': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup',
                            'lag_prisoner_cases', 'new_prisoner_cases'],
-            'policy': ['no_visits', 'lawyer_access', 'phone_access', 
-                       'video_access', 'no_volunteers', 'limiting_movement', 
+            'policy': ['no_visits', 'lawyer_access', 'phone_access',
+                       'video_access', 'no_volunteers', 'limiting_movement',
                        'screening', 'healthcare_support', 'lag_prisoner_cases',
                        'new_prisoner_cases'],
-            'total': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup', 
-                      'no_visits', 'lawyer_access', 'phone_access', 
+            'total': ['pop_2020', 'pop_2018', 'capacity', 'pct_occup',
+                      'no_visits', 'lawyer_access', 'phone_access',
                       'video_access', 'no_volunteers', 'limiting_movement', 
                       'screening', 'healthcare_support', 'lag_prisoner_cases',
                       'new_prisoner_cases']}
@@ -35,9 +35,9 @@ TARGET = 'total_prisoner_cases'
 DEGREES = [1, 2, 3]
 
 MODELS = {'LinearRegression': linear_model.LinearRegression(),
-    'Lasso': linear_model.Lasso(),
-    'Ridge': linear_model.Ridge(),
-    'ElasticNet': linear_model.ElasticNet()}
+          'Lasso': linear_model.Lasso(),
+          'Ridge': linear_model.Ridge(),
+          'ElasticNet': linear_model.ElasticNet()}
 
 GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
         'Lasso': [{'alpha': x, 'random_state': 0} \
@@ -45,7 +45,7 @@ GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
         'Ridge': [{'alpha': x, 'random_state': 0} \
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)],
         'ElasticNet': [{'alpha': x, 'random_state': 0} \
-                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}  
+                  for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}
 
 
 def compare_feat_import(best_models, temporal_splits, features=FEATURES, 
@@ -299,15 +299,12 @@ def simulate(dataset, feat_dict, feat_type, best_model, target=TARGET):
 
     for col, val in feat_dict.items():
         test[col] = val
-    # print(test.head())
     
     X_train, y_train, X_test, y_test = normalize_prep_eval_data(dataset, test,
                                                                  feat_type,
                                                                  include_date=True)
     model_type = MODELS[best_model[feat_type]['model_type']]
-
     best_params = best_model[feat_type]['params']
-
 
     predictions = fit_and_predict(X_train, y_train, X_test, y_test,
                                   model_type, best_params)
@@ -343,21 +340,17 @@ def run_temporal_cv(temporal_splits, features=FEATURES, target=TARGET,
                                degrees, models, grid)
 
         best_from_feat = find_best_model(cv_df)
-
         best_type = best_from_feat.groupby('model').size().to_frame()
         best_type.reset_index(inplace=True, drop=False)
         best_type.rename(columns={0: "count"}, inplace=True)
         best_type.sort_values('count', ascending=False, inplace=True)
         best_single = best_type.loc[0, 'model']
-
         best = cv_df.loc[cv_df['model'] == best_single, ['model', 'parameters',
                                                          'degree']]
         best_model = best.iloc[0]
-
         params = {'degree': int(best_model['degree']),
                   'params': best_model['parameters'],
                   'model_type': best_model['model'].split()[0]}
-
         best_models[feat_type] = params
 
     return best_models
@@ -405,7 +398,6 @@ def cross_validate(temporal_splits, features, target,
         test = test.drop(columns=norm_features)
         test = test.merge(test_norm, left_index=True, right_index=True)
 
-        
         for deg in degrees:
             poly = PolynomialFeatures(degree=deg)
             X_train = poly.fit_transform(train[features].copy())
@@ -416,20 +408,19 @@ def cross_validate(temporal_splits, features, target,
             model_perf = run_grid_search(X_train, y_train, X_test, y_test, 
                                          test_week, deg, models, grid)
             cv_eval.append(model_perf)
-            
+
     cv_df = pd.concat(cv_eval).astype(dtype={'mse': float, 'mae': float, 
                                              'rss': float, 'degree': int})
-    
+
     cv_df.reset_index(inplace=True)
     cv_df.rename(columns={'index': 'model'}, inplace=True)
     cv_df['model'] = cv_df['model'].str.extract(r"(\w+)\(")[0] + " " + \
                                     "degree_" + cv_df['degree'].astype(str) + \
                                     " " + cv_df["parameters"].astype(str)
-    
+
     return cv_df
 
 
-# Build Classifiers: Run a grid search, run a single model
 def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models, 
                     grid, verbose=False):
     '''
@@ -511,7 +502,6 @@ def fit_and_predict(X_train, y_train, X_test, y_test, model_type, param):
     return model.predict(X_test)
 
 
-
 def build_classifier(X_train, y_train, X_test, y_test, model_type, 
                      param, model_perf, ret_predictions=False):
     '''
@@ -537,13 +527,6 @@ def build_classifier(X_train, y_train, X_test, y_test, model_type,
     '''    
     # Initialize timer for the model
     start = datetime.datetime.now()
-
-    # Build Model 
-    # model = model_type 
-    # model.set_params(**param)
-
-    # # Fit model on training set 
-    # model.fit(X_train, y_train)
         
     # Predict on testing set 
     predictions = fit_and_predict(X_train, y_train, X_test, y_test, model_type,
@@ -613,9 +596,9 @@ def find_best_model(cv_results):
     Returns: 
         - best_models: (pandas df) a dataframe of the best models for 
                         each accuracy metric. Some models may repeat
-        - best_single: (str) the single best performing model and its params
     
-    '''    
+    '''
+
     by_model_means = cv_results.groupby('model').mean()
     by_model_means.reset_index(inplace=True, drop=False)
     
@@ -630,3 +613,11 @@ def find_best_model(cv_results):
 
     return best_models
 
+def pred_north_carolina(X_train, y_train, X_test, y_test, model, param):
+    predictions = build_classifier(X_train, y_train, X_test, 
+                                   y_test, model, param, {},
+                                   ret_predictions=True)
+    full_pred = X_test.reset_index(drop=True).merge(pd.DataFrame(predictions),
+                                   left_index=True, right_index=True) \
+                                   .rename(columns={0: 'total_prisoner_cases'})
+    return full_pred[full_pred['state_north_carolina'] ==  1]['total_prisoner_cases']
