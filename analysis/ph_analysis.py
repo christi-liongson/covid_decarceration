@@ -47,96 +47,6 @@ GRID = {'LinearRegression': [{'normalize': False, 'fit_intercept': True}],
                   for x in (0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)]}
 
 
-def compare_feat_import(best_models, temporal_splits):
-    '''
-    Returns all features with coefficients over a given threshold for a model
-    learned on the largest possible temporal split data to predict the last week
-    in the validation sets.
-    Inputs:
-        -  best_models: (dict)  A dictionary of best models from cross-validation
-        - temporal_splits (lst): List of dictionaries of
-                                 temporally split Pandas dataframes
-    Returns:
-        - importances: (lst) a list of small dataframes containing the features
-                        with coefficients over a given threshold, and the
-                        absolute value of those coefficients
-    '''
-    train = temporal_splits[-1]['train']
-    test = temporal_splits[-1]['test']
-    states = [col for col in temporal_splits[0]['train'].columns if
-              'state' in col]
-
-    importances = []
-
-    for feat_type in best_models.keys():
-        feat_set = FEATURES[feat_type]
-
-        model = MODELS[best_models[feat_type]['model_type']]
-        params = best_models[feat_type]['params']
-        deg = best_models[feat_type]['degree']
-
-        poly = PolynomialFeatures(degree=deg)
-        X_train = poly.fit_transform(train[feat_set + states].copy())
-        y_train = train[TARGET].copy()
-        X_test = poly.fit_transform(test[feat_set + states].copy())
-
-        feat_import = get_feature_importance(model, params, feat_set + states,
-                                             X_train, y_train, X_test,
-                                             degree=deg)
-        importances.append(feat_import)
-
-    return importances
-
-
-def get_feature_importance(model, params, features, X_train, y_train, X_test,
-                           degree=None):
-    '''
-    Runs model with parameters and determines feature importance.
-
-    Inputs:
-        - model: (sklearn Model) Model object to run fit and predict
-        - params: (dict) dictionary of model parameters
-        - features: (lst) a list of features used to predict the target
-        - X_train: (pandas dataframe) a dataframe containing the training set
-                    limited to the predictive features
-        - y_train: (pandas series) a series with the true values of the
-                    target in the training set
-        - X_test: (pandas dataframe) a dataframe containing the testing set
-                   limited to the predictive features
-        - y_test: (pandas series) a series with the true values of the
-                   target in the testing set
-        - degree: (int) the degree of the polynomial expansion
-
-    Returns:
-        - key_importances = (pandas df) pandas dataframe of absolute value of
-                             feature coefficients, sorted in descending order
-                             of importance
-    '''
-
-    if degree:
-        feature_list = ['1']
-    else:
-        feature_list = []
-        degree = 1
-    for deg in range(1, degree+1):
-        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
-
-    test_model = model
-    test_model.set_params(**params)
-    test_model.fit(X_train, y_train)
-    test_model.predict(X_test)
-
-    feat_shrink = pd.DataFrame({'Features': feature_list,
-                                'Coefficients': list(test_model.coef_)})
-    feat_shrink['Coefficients'] = feat_shrink['Coefficients'].apply(abs)
-    feat_shrink = feat_shrink.sort_values(by='Coefficients', ascending=False)
-    feat_shrink.reset_index(drop=True, inplace=True)
-
-    key_importances = feat_shrink[feat_shrink['Coefficients'] > 0.001].copy()
-
-    return key_importances
-
-
 def timesplit_data():
     '''
     Splits the dataset into training and testing sets at the most recent week.
@@ -190,6 +100,7 @@ def time_cv_split(train):
 
     return train_cv_splits
 
+
 def normalize_prep_eval_data(train, test, feat_type, include_date=False):
     '''
     Normalizes data and drops earliest week from training set.
@@ -228,40 +139,6 @@ def normalize_prep_eval_data(train, test, feat_type, include_date=False):
     y_test = test[TARGET].copy()
 
     return X_train, y_train, X_test, y_test
-
-
-def predict_and_evaluate(train, test, feat_type, best_model, drop_features=False):
-    '''
-    Trains and predicts best model selected through cross validation and
-    evaluates accuracty metrics.
-
-    Inputs:
-        - train (Pandas DataFrame): training dataset
-        - test (Pandas DataFrame): testing dataset
-        - feat_type (str): feature set
-        - best_model (dict): dictionary of best performing models of each
-            feature type
-    Outputs: Pandas DataFrame of evaluation metrics
-    '''
-
-    model_perf = {}
-    X_train, y_train, X_test, y_test = normalize_prep_eval_data(train, test,
-                                                                feat_type,
-                                                                include_date=True)
-    if drop_features:
-        X_train = X_train.drop(columns=drop_features)
-        X_test = X_test.drop(columns=drop_features)
-
-    model_type = MODELS[best_model[feat_type]['model_type']]
-
-    best_params = best_model[feat_type]['params']
-
-    predictions = build_classifier(X_train, y_train, X_test, y_test, model_type,
-                                   best_params, model_perf, ret_predictions=True)
-
-    plotting.plot_predicted_data(X_train, y_train, X_test, y_test, predictions)
-
-    return pd.DataFrame(model_perf.values())
 
 
 def simulate(dataset, feat_dict, feat_type, best_model):
@@ -323,7 +200,6 @@ def run_temporal_cv(temporal_splits):
         - best_models: (dict) a dictionary of the best model and its parameters
                         for every set of features run through the cv process
     '''
-
     best_models = {}
 
     states = [col for col in temporal_splits[0]['train'].columns if
@@ -463,38 +339,6 @@ def run_grid_search(X_train, y_train, X_test, y_test, test_week, degree, models,
 
     return model_compare
 
-def fit_and_predict(X_train, y_train, X_test, model_type, param):
-    '''
-    Fits and predicts model.
-
-    Inputs:
-        - X_train: (pandas dataframe) a dataframe containing the training set
-                    limited to the predictive features
-        - y_train: (pandas series) a series with the true values of the
-                    target in the training set
-        - X_test: (pandas dataframe) a dataframe containing the testing set
-                   limited to the predictive features
-        - y_test: (pandas series) a series with the true values of the
-                   target in the testing set
-        - model_type: (object) an instance of whichever model class we run
-        - params: (dict) a dictionary of parameters to use in the model
-
-    Outputs:
-        Array of predicted values
-    '''
-    if isinstance(X_train, pd.DataFrame) and 'as_of_date' in X_train.columns:
-        X_train = X_train.drop(columns='as_of_date')
-        X_test = X_test.drop(columns='as_of_date')
-
-    model = model_type
-    model.set_params(**param)
-
-    # Fit model on training set
-    model.fit(X_train, y_train)
-
-    # Predict on testing set
-    return model.predict(X_test)
-
 
 def build_classifier(X_train, y_train, X_test, y_test, model_type,
                      param, model_perf, ret_predictions=False):
@@ -515,6 +359,8 @@ def build_classifier(X_train, y_train, X_test, y_test, model_type,
         - params: (dict) a dictionary of parameters to use in the model
         - model_perf: (dict) a dictionary of various measures of accuracy for
                        the model
+        - ret_predictions: (Boolean) a flag for whether or not to return the 
+                            predicted values from a model
 
     Returns:
         - nothing: updates the model_perf dictionary in place
@@ -541,6 +387,7 @@ def build_classifier(X_train, y_train, X_test, y_test, model_type,
 
     if ret_predictions:
         return predictions
+
     return None
 
 
@@ -591,9 +438,7 @@ def find_best_model(cv_results):
     Returns:
         - best_models: (pandas df) a dataframe of the best models for
                         each accuracy metric. Some models may repeat
-
     '''
-
     by_model_means = cv_results.groupby('model').mean()
     by_model_means.reset_index(inplace=True, drop=False)
 
@@ -607,6 +452,163 @@ def find_best_model(cv_results):
     best_models = pd.concat([best_mse, best_mae, best_rss])
 
     return best_models
+
+
+def compare_feat_import(best_models, temporal_splits):
+    '''
+    Returns all features with coefficients over a given threshold for a model
+    learned on the largest possible temporal split data to predict the last week
+    in the validation sets.
+    Inputs:
+        - best_models: (dict)  A dictionary of best models from cross-validation
+        - temporal_splits (lst): List of dictionaries of
+                                 temporally split Pandas dataframes
+    Returns:
+        - importances: (lst) a list of small dataframes containing the features
+                        with coefficients over a given threshold, and the
+                        absolute value of those coefficients
+    '''
+    train = temporal_splits[-1]['train']
+    test = temporal_splits[-1]['test']
+    states = [col for col in temporal_splits[0]['train'].columns if
+              'state' in col]
+
+    importances = []
+
+    for feat_type in best_models.keys():
+        feat_set = FEATURES[feat_type]
+
+        model = MODELS[best_models[feat_type]['model_type']]
+        params = best_models[feat_type]['params']
+        deg = best_models[feat_type]['degree']
+
+        poly = PolynomialFeatures(degree=deg)
+        X_train = poly.fit_transform(train[feat_set + states].copy())
+        y_train = train[TARGET].copy()
+        X_test = poly.fit_transform(test[feat_set + states].copy())
+
+        feat_import = get_feature_importance(model, params, feat_set + states,
+                                             X_train, y_train, X_test,
+                                             degree=deg)
+        importances.append(feat_import)
+
+    return importances
+
+
+def get_feature_importance(model, params, features, X_train, y_train, X_test,
+                           degree=None):
+    '''
+    Runs model with parameters and determines feature importance.
+
+    Inputs:
+        - model: (sklearn Model) Model object to run fit and predict
+        - params: (dict) dictionary of model parameters
+        - features: (lst) a list of features used to predict the target
+        - X_train: (pandas dataframe) a dataframe containing the training set
+                    limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
+        - degree: (int) the degree of the polynomial expansion
+
+    Returns:
+        - key_importances = (pandas df) pandas dataframe of absolute value of
+                             feature coefficients, sorted in descending order
+                             of importance
+    '''
+    if degree:
+        feature_list = ['1']
+    else:
+        feature_list = []
+        degree = 1
+    for deg in range(1, degree+1):
+        feature_list.extend(['{}^{}'.format(feat, deg) for feat in features])
+
+    test_model = model
+    test_model.set_params(**params)
+    test_model.fit(X_train, y_train)
+    test_model.predict(X_test)
+
+    feat_shrink = pd.DataFrame({'Features': feature_list,
+                                'Coefficients': list(test_model.coef_)})
+    feat_shrink['Coefficients'] = feat_shrink['Coefficients'].apply(abs)
+    feat_shrink = feat_shrink.sort_values(by='Coefficients', ascending=False)
+    feat_shrink.reset_index(drop=True, inplace=True)
+
+    key_importances = feat_shrink[feat_shrink['Coefficients'] > 0.001].copy()
+
+    return key_importances
+
+
+def predict_and_evaluate(train, test, feat_type, best_model, drop_features=False):
+    '''
+    Trains and predicts best model selected through cross validation and
+    evaluates accuracty metrics.
+
+    Inputs:
+        - train (Pandas DataFrame): training dataset
+        - test (Pandas DataFrame): testing dataset
+        - feat_type (str): feature set
+        - best_model (dict): dictionary of best performing models of each
+            feature type
+
+    Outputs: Pandas DataFrame of evaluation metrics
+    '''
+    model_perf = {}
+    X_train, y_train, X_test, y_test = normalize_prep_eval_data(train, test,
+                                                                feat_type,
+                                                                include_date=True)
+    if drop_features:
+        X_train = X_train.drop(columns=drop_features)
+        X_test = X_test.drop(columns=drop_features)
+
+    model_type = MODELS[best_model[feat_type]['model_type']]
+
+    best_params = best_model[feat_type]['params']
+
+    predictions = build_classifier(X_train, y_train, X_test, y_test, model_type,
+                                   best_params, model_perf, ret_predictions=True)
+
+    plotting.plot_predicted_data(X_train, y_train, X_test, y_test, predictions)
+
+    return pd.DataFrame(model_perf.values())
+
+
+def fit_and_predict(X_train, y_train, X_test, model_type, param):
+    '''
+    Fits and predicts model.
+
+    Inputs:
+        - X_train: (pandas dataframe) a dataframe containing the training set
+                    limited to the predictive features
+        - y_train: (pandas series) a series with the true values of the
+                    target in the training set
+        - X_test: (pandas dataframe) a dataframe containing the testing set
+                   limited to the predictive features
+        - y_test: (pandas series) a series with the true values of the
+                   target in the testing set
+        - model_type: (object) an instance of whichever model class we run
+        - params: (dict) a dictionary of parameters to use in the model
+
+    Outputs:
+        Array of predicted values
+    '''
+    if isinstance(X_train, pd.DataFrame) and 'as_of_date' in X_train.columns:
+        X_train = X_train.drop(columns='as_of_date')
+        X_test = X_test.drop(columns='as_of_date')
+
+    model = model_type
+    model.set_params(**param)
+
+    # Fit model on training set
+    model.fit(X_train, y_train)
+
+    # Predict on testing set
+    return model.predict(X_test)
+
 
 def pred_north_carolina(X_train, y_train, X_test, y_test, model, param):
     '''
@@ -623,7 +625,9 @@ def pred_north_carolina(X_train, y_train, X_test, y_test, model, param):
                     target in the testing set
         - model_type: (object) an instance of whichever model class we run
         - params: (dict) a dictionary of parameters to use in the model
-    Returns: Pandas Series with latest count
+
+    Returns: 
+        - Pandas Series with latest count of infections in North Carolina
     '''
     predictions = build_classifier(X_train, y_train, X_test,
                                    y_test, model, param, {},

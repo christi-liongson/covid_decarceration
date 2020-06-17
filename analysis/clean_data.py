@@ -1,5 +1,7 @@
 '''
-Cleaning and preprocessing data
+Christi Liongson, Hana Passen, Charmaine Runes, Damini Sharma
+
+Module to for cleaning and preprocessing data.
 '''
 
 import pandas as pd
@@ -13,9 +15,9 @@ def import_csv(filename, dtypes=None):
     Inputs:
         filename (str): Name of file
         dtypes (dict): Datatypes of Pandas dataframe to import
+
     Outputs: Pandas DataFrame
     '''
-
     return pd.read_csv(filename, dtype=dtypes, usecols=list(dtypes.keys()))
 
 
@@ -23,9 +25,11 @@ def normalize(df, scaler=None):
     '''
     If scaler is not none, use given scaler's means and sds to normalize
     (used for test set case)
+    
     Inputs:
         df (dataframe)
         scaler (StandardScaler)
+    
     Outputs: Tuple of dataframe and scaler
     '''
     # Will not normalize the response (or outcomes), only the predictors

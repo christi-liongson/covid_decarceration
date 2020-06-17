@@ -12,6 +12,7 @@ from pandas.plotting import register_matplotlib_converters
 import ph_analysis as pha
 register_matplotlib_converters()
 
+
 def graph_cv_scores(df, vars_and_labels, grouping, title):
     '''
     Plots the cross validation results for each type of model for each degree
@@ -45,7 +46,6 @@ def graph_cv_scores(df, vars_and_labels, grouping, title):
     fig.legend(lines, labels, loc="center left", bbox_to_anchor=(1.0, 0.5))
     fig.suptitle(title)
     plt.show()
-
 
 
 def plot_single_var_regression(train_df, test_df, feature, target, lin_reg,
@@ -94,6 +94,7 @@ def plot_single_var_regression(train_df, test_df, feature, target, lin_reg,
     plt.xlim(axes)
     plt.show()
 
+
 def make_time_plot(df, vars_and_labels, grouping, title):
     '''
     Inputs:
@@ -125,6 +126,7 @@ def make_time_plot(df, vars_and_labels, grouping, title):
     fig.suptitle(title)
     plt.show()
 
+
 def plot_comp_feature_importance(feature_importances, feature_sets):
     '''
     Plots multiple feature importance in a bar chart. Displays ten features with highest
@@ -134,8 +136,9 @@ def plot_comp_feature_importance(feature_importances, feature_sets):
         - feature_importances (list): list of Pandas DataFrames of model
             coefficients
         - feature_sets (list): Names of feature sets
-    Ouputs:
-        - Displays graph
+
+    Returns:
+        - nothing: shows plot in place
     '''
     num_plots = len(feature_sets)
     fig, axes = plt.subplots(1, num_plots, figsize=(15,5))
@@ -149,6 +152,7 @@ def plot_comp_feature_importance(feature_importances, feature_sets):
                                 rotation=45, ha='right')
         axes[i].set_title(feature_sets[i])
 
+
 def plot_feature_importance(feature_importance):
     '''
     The first plot will display the top ten features. The second plot
@@ -157,6 +161,9 @@ def plot_feature_importance(feature_importance):
     Inputs:
         - feature_importance (Pandas Dataframe): dataframe of model's feature
                 importance.
+
+    Returns:
+        - nothing: shows plot in place
     '''
     no_states = [x for x in feature_importance['Features'].unique() \
                  if "state" not in x]
@@ -174,13 +181,17 @@ def plot_feature_importance(feature_importance):
         axes[i].set_xticklabels(axes[i].get_xticklabels(),
                                 rotation=45, ha='right')
 
+
 def plot_simulation(dataset, predictions):
     '''
-    Plots a single simulation.
+    Plots the results of a single simulation.
 
     Inputs:
         - dataset (Pandas DataFrame): Full dataset
         - predictions (Pandas Series) - predictions from simulation
+
+    Returns:
+        - nothing: shows plot in place
     '''
     plt.plot(dataset['as_of_date'].dt.week, dataset['total_prisoner_cases'],
               '.', color='blue', markersize=12)
@@ -201,8 +212,10 @@ def plot_simulations(dataset, policies, feat_set, best_models):
         - feat_set (str): name of feature set
         - best_models (dict): Dictionary of accuracy scores of each best model
             in cross-validation
-    '''
 
+    Returns:
+        - nothing: shows plot in place
+    '''
     fig, axes = plt.subplots(2, 2, sharex="all", sharey="all", figsize=(20, 10))
 
     i = 0
@@ -219,6 +232,7 @@ def plot_simulations(dataset, policies, feat_set, best_models):
 
             i += 1
 
+
 def plot_predicted_data(X_train, y_train, X_test, y_test, predictions):
     '''
     Plots training, true test, and predicted test data in a single plot.
@@ -233,10 +247,10 @@ def plot_predicted_data(X_train, y_train, X_test, y_test, predictions):
         - y_test: (pandas series) a series with the true values of the
                    target in the testing set
         - predictions: (array) Predicted test target values from trained model
-    Outputs:
-        - Displays graph
+    
+    Returns:
+        - nothing: shows plot in place
     '''
-
     plt.plot(X_train['as_of_date'], y_train, '.', color='blue', markersize=12)
     # Test data is in red
     plt.plot(X_test['as_of_date'], y_test, '*', color='red', markersize=10 )
@@ -246,4 +260,3 @@ def plot_predicted_data(X_train, y_train, X_test, y_test, predictions):
     plt.xlabel('Date')
     plt.ylabel('Cases')
     plt.xticks(rotation=45)
-

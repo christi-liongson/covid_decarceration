@@ -255,6 +255,7 @@ def build_capacity_df(filepath=CAPACITY):
                                                 "capacity", "pct_occup"])
     return capacity_df
 
+
 if __name__ == "__main__":
     logging.info('''Generating final dataframe of COVID-19 cases prison
                     capacity/population, and social distancing policies
