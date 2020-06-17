@@ -4,7 +4,6 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
-- [Usage](#usage)
 - [Directory](#directory)
 - [Team](#team)
 
